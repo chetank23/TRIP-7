@@ -379,7 +379,28 @@ async function runTestSuite() {
   assert(tripContextCode.includes('30000'), 'Trip context polling interval must be configured for 30s (30000ms)');
   console.log('  ✔ PWA Manifest, app icons (192, 512, SVG) & 30s active polling contract verified.\n');
 
-  console.log('🎉 ALL TESTS PASSED! NAVBAR CONTRACT, AUTO-SYNC, ORGANIZER PRIVILEGES, 6-MEMBER SPLIT, MEMBER SPENDING & PWA APP INSTALLATION VERIFIED!\n');
+  // Test L: Chetan Password Authentication & iPhone 14+ PWA Security
+  console.log('Test L: Chetan Password (0923) Verification & iPhone 14+ Service Worker Security');
+  const authModule = await import('../src/lib/auth');
+
+  assert.strictEqual(authModule.ORGANIZER_PASSWORD, '0923', 'Organizer password must be 0923');
+  assert.strictEqual(authModule.verifyOrganizerPassword('0923'), true, '0923 must verify successfully');
+  assert.strictEqual(authModule.verifyOrganizerPassword(' 0923 '), true, '0923 with whitespace must trim and verify');
+  assert.strictEqual(authModule.verifyOrganizerPassword('1234'), false, 'Incorrect password must be rejected');
+  assert.strictEqual(authModule.verifyOrganizerPassword(''), false, 'Empty password must be rejected');
+
+  assert.strictEqual(authModule.isOrganizer('Chetan K'), true, 'Chetan K must be recognized as organizer');
+  assert.strictEqual(authModule.isOrganizer('chethan'), true, 'chethan must be recognized as organizer');
+  assert.strictEqual(authModule.isOrganizer('Adithi'), false, 'Adithi is not organizer');
+
+  // Verify Service Worker for iOS (iPhone 14+) security
+  assert(fs.existsSync(path.join(process.cwd(), 'public', 'sw.js')), 'sw.js must exist for iOS PWA security');
+  const swCode = fs.readFileSync(path.join(process.cwd(), 'public', 'sw.js'), 'utf8');
+  assert(swCode.includes('bvc-trip-v1'), 'sw.js must contain cache name');
+
+  console.log('  ✔ Chetan passcode 0923 verification, organizer checks & sw.js verified.\n');
+
+  console.log('🎉 ALL TESTS PASSED! NAVBAR CONTRACT, AUTO-SYNC, ORGANIZER PRIVILEGES, 6-MEMBER SPLIT, MEMBER SPENDING, PWA APP INSTALLATION & CHETAN PASSCODE VERIFIED!\n');
 }
 
 runTestSuite().catch((err) => {

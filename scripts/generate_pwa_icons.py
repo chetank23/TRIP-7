@@ -131,3 +131,4 @@ def create_pwa_icon(size, filename):
 create_pwa_icon(192, 'public/icon-192.png')
 create_pwa_icon(512, 'public/icon-512.png')
 create_pwa_icon(180, 'public/apple-touch-icon.png')
+

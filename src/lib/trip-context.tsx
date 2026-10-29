@@ -11,7 +11,7 @@ import {
   ExpenseCategory,
   MemberContribution,
 } from '@/types';
-import { isOrganizer } from '@/lib/auth';
+import { isOrganizer, setOrganizerVerified } from '@/lib/auth';
 
 interface ToastState {
   id: string;
@@ -141,6 +141,7 @@ export function TripProvider({ children }: { children: React.ReactNode }) {
 
   const logout = useCallback(() => {
     setUserNameState('');
+    setOrganizerVerified(false);
     try {
       localStorage.removeItem(USER_STORAGE_KEY);
     } catch {}

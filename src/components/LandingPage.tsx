@@ -5,6 +5,8 @@ import { useTrip } from '@/lib/trip-context';
 import { User, ArrowRight } from 'lucide-react';
 import { FRIEND_PROFILES, findProfileByName, FriendProfile } from '@/lib/profiles';
 import { InstallAppButton } from '@/components/InstallAppButton';
+import { isOrganizer } from '@/lib/auth';
+import { ChetanPasswordModal } from '@/components/ChetanPasswordModal';
 
 const DEFAULT_QUICK_MEMBERS = [
   'Chetan K',
@@ -20,6 +22,10 @@ export function LandingPage() {
   const { setUserName, state } = useTrip();
   const [nameInput, setNameInput] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
+
+  // Chetan password modal state
+  const [showPasswordModal, setShowPasswordModal] = useState<boolean>(false);
+  const [pendingOrganizerName, setPendingOrganizerName] = useState<string>('');
 
   // Profile showcase states
   const [activeSlide, setActiveSlide] = useState<number>(0);
@@ -77,7 +83,21 @@ export function LandingPage() {
     }
     const matched = findProfileByName(trimmed);
     const finalName = matched ? matched.name : trimmed;
+
+    // Check if logging in as Chetan -> require 0923 passcode
+    if (isOrganizer(finalName)) {
+      setPendingOrganizerName(finalName);
+      setShowPasswordModal(true);
+      return;
+    }
+
     setUserName(finalName);
+  };
+
+  const handlePasswordSuccess = () => {
+    setShowPasswordModal(false);
+    const name = pendingOrganizerName || 'Chetan K';
+    setUserName(name);
   };
 
   // Determine currently visible profile: selected profile overrides slideshow
@@ -247,6 +267,13 @@ export function LandingPage() {
             <InstallAppButton variant="pill" />
           </div>
         </form>
+
+        {/* Chetan Password Protection Modal */}
+        <ChetanPasswordModal
+          isOpen={showPasswordModal}
+          onSuccess={handlePasswordSuccess}
+          onCancel={() => setShowPasswordModal(false)}
+        />
       </div>
     </div>
   );

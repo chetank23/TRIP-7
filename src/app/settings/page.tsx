@@ -24,6 +24,8 @@ import {
   Download,
 } from 'lucide-react';
 import { InstallAppButton } from '@/components/InstallAppButton';
+import { isOrganizer } from '@/lib/auth';
+import { ChetanPasswordModal } from '@/components/ChetanPasswordModal';
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -43,6 +45,8 @@ export default function SettingsPage() {
 
   const [isEditingName, setIsEditingName] = useState<boolean>(false);
   const [nameInput, setNameInput] = useState<string>(userName || '');
+  const [showPasswordModal, setShowPasswordModal] = useState<boolean>(false);
+  const [pendingNewName, setPendingNewName] = useState<string>('');
   const [showMembersModal, setShowMembersModal] = useState<boolean>(false);
   const [newMemberName, setNewMemberName] = useState<string>('');
 
@@ -70,9 +74,24 @@ export default function SettingsPage() {
     e.preventDefault();
     const trimmed = nameInput.trim();
     if (!trimmed) return;
+
+    if (isOrganizer(trimmed) && !isOrganizer(userName)) {
+      setPendingNewName(trimmed);
+      setShowPasswordModal(true);
+      return;
+    }
+
     setUserName(trimmed);
     setIsEditingName(false);
     showToast(`Display name updated to ${trimmed}`, 'success');
+  };
+
+  const handlePasswordSuccess = () => {
+    setShowPasswordModal(false);
+    const newName = pendingNewName || 'Chetan K';
+    setUserName(newName);
+    setIsEditingName(false);
+    showToast(`Welcome Chetan! Display name updated to ${newName}`, 'success');
   };
 
   const handleAddMember = async (e: React.FormEvent) => {
@@ -605,6 +624,13 @@ export default function SettingsPage() {
           </div>
         </div>
       )}
+
+      {/* Chetan Passcode Verification Modal */}
+      <ChetanPasswordModal
+        isOpen={showPasswordModal}
+        onSuccess={handlePasswordSuccess}
+        onCancel={() => setShowPasswordModal(false)}
+      />
     </div>
   );
 }

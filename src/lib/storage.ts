@@ -31,8 +31,8 @@ function migrateMemberName(name?: string): string {
   return OLD_TO_NEW_MEMBERS[name] || name;
 }
 
-import { isOrganizer } from './auth';
-export { isOrganizer };
+import { isOrganizer, ORGANIZER_PASSWORD, verifyOrganizerPassword } from './auth';
+export { isOrganizer, ORGANIZER_PASSWORD, verifyOrganizerPassword };
 
 export const INITIAL_STATE: TripState = {
   version: 1,

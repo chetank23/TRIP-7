@@ -7,6 +7,7 @@ import { DeleteConfirmModal } from '@/components/DeleteConfirmModal';
 import { BudgetModal } from '@/components/BudgetModal';
 import { PdfViewerModal } from '@/components/PdfViewerModal';
 import { Toast } from '@/components/Toast';
+import { ServiceWorkerRegister } from '@/components/ServiceWorkerRegister';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -22,9 +23,12 @@ export const metadata: Metadata = {
     icon: [
       { url: '/icon.svg', type: 'image/svg+xml' },
       { url: '/icon-192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/icon-512.png', sizes: '512x512', type: 'image/png' },
     ],
     apple: [
       { url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
+      { url: '/icon-192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/icon-512.png', sizes: '512x512', type: 'image/png' },
     ],
   },
 };
@@ -45,8 +49,18 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${plusJakartaSans.variable} ${remachineScript.variable}`}>
+      <head>
+        {/* iPhone 14+ Apple PWA & WebKit Security Specifics */}
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta name="apple-mobile-web-app-title" content="BVC Trip" />
+        <meta name="format-detection" content="telephone=no" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+      </head>
       <body className="bg-bvc-bg text-bvc-text font-sans antialiased selection:bg-bvc-red/20 selection:text-bvc-red min-h-screen">
         <TripProvider>
+          <ServiceWorkerRegister />
           <Toast />
           {children}
           <Navigation />
