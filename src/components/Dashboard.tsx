@@ -5,7 +5,6 @@ import { useTrip } from '@/lib/trip-context';
 import { Header } from '@/components/Header';
 import { VirtualBvcCard } from '@/components/VirtualBvcCard';
 import { BudgetSummaryCard } from '@/components/BudgetSummaryCard';
-import { MemberSpendingSummary } from '@/components/MemberSpendingSummary';
 import { CategorySummaryGrid } from '@/components/CategorySummaryGrid';
 import { RecentTransactions } from '@/components/RecentTransactions';
 import { LoadingSkeleton } from '@/components/LoadingSkeleton';
@@ -59,6 +58,9 @@ export function Dashboard() {
                   className="w-full h-full object-cover object-[center_36%] select-none pointer-events-none"
                   loading="eager"
                   decoding="async"
+                  onError={(e) => {
+                    e.currentTarget.src = 'https://res.cloudinary.com/dccnccjgr/image/upload/v1793306702/7d99a727-005c-419d-97da-794a0b896691_bzogks.png';
+                  }}
                 />
               </div>
             </div>
@@ -68,9 +70,6 @@ export function Dashboard() {
 
             {/* Shared Trip Budget Summary */}
             <BudgetSummaryCard />
-
-            {/* Who Paid How Much Section */}
-            <MemberSpendingSummary />
 
             {/* 6 Category Summary Grid */}
             <CategorySummaryGrid />

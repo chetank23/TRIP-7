@@ -333,11 +333,11 @@ export default function AnalyticsPage() {
                 })}
               </div>
             </div>
-
-            {/* 4. Who Paid How Much Section */}
-            <MemberSpendingSummary />
           </>
         )}
+
+        {/* 4. Who Paid How Much Section */}
+        <MemberSpendingSummary />
       </main>
     </div>
   );
