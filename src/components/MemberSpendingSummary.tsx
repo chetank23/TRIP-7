@@ -116,10 +116,10 @@ export function MemberSpendingSummary() {
                     </div>
                     <span className="text-[10px] text-bvc-secondary font-medium block">
                       {isVyshnavi
-                        ? 'Not on trip · Always in our thoughts 💖'
+                        ? 'Always with us...'
                         : member.expenseCount === 0
-                        ? 'No expenses paid'
-                        : `${member.expenseCount} payment${member.expenseCount === 1 ? '' : 's'}`}
+                          ? 'No expenses paid'
+                          : `${member.expenseCount} payment${member.expenseCount === 1 ? '' : 's'}`}
                     </span>
                   </div>
                 </div>
@@ -135,9 +135,8 @@ export function MemberSpendingSummary() {
                     </span>
                     {totalSpent > 0 && !isVyshnavi && (
                       <span
-                        className={`text-[9px] font-bold ${
-                          balance >= 0 ? 'text-emerald-700' : 'text-bvc-muted'
-                        }`}
+                        className={`text-[9px] font-bold ${balance >= 0 ? 'text-emerald-700' : 'text-bvc-muted'
+                          }`}
                       >
                         {balance > 0 ? `(+₹${balance.toLocaleString('en-IN')})` : ''}
                       </span>
@@ -154,13 +153,12 @@ export function MemberSpendingSummary() {
               {/* Relative Progress Bar */}
               <div className="w-full h-1.5 bg-cream-200 rounded-full overflow-hidden">
                 <div
-                  className={`h-full rounded-full transition-all duration-500 ${
-                    isTopPayer
-                      ? 'bg-gradient-to-r from-bvc-deepRed to-bvc-red'
-                      : member.totalPaid > 0
+                  className={`h-full rounded-full transition-all duration-500 ${isTopPayer
+                    ? 'bg-gradient-to-r from-bvc-deepRed to-bvc-red'
+                    : member.totalPaid > 0
                       ? 'bg-bvc-red/80'
                       : 'bg-transparent'
-                  }`}
+                    }`}
                   style={{ width: `${Math.max(member.percentage, member.totalPaid > 0 ? 5 : 0)}%` }}
                 />
               </div>
