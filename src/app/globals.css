@@ -1,0 +1,96 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-main: #FBF5EC;
+  --surface-primary: #FFFDF9;
+  --surface-secondary: #F6EDE2;
+  --surface-glass: rgba(255, 255, 255, 0.82);
+  --text-primary: #242126;
+  --text-secondary: #81766C;
+  --text-muted: #A69A90;
+  --color-red: #D7192D;
+  --color-deep-red: #B90F24;
+  --color-red-highlight: #F34D55;
+  --color-peach: #FFC49B;
+  --color-border: #EFE3D7;
+}
+
+body {
+  background-color: var(--bg-main);
+  color: var(--text-primary);
+  font-family: var(--font-sans), system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+
+/* Tabular numbers for financial amounts */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Glassmorphism utility */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(239, 227, 215, 0.8);
+}
+
+.glass-nav {
+  background: rgba(255, 253, 249, 0.88);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(239, 227, 215, 0.9);
+  box-shadow: 0 12px 32px -4px rgba(36, 33, 38, 0.12), 0 4px 12px -2px rgba(36, 33, 38, 0.04);
+}
+
+/* Red Virtual Card Gradient and Wavy Lines */
+.bvc-card-bg {
+  background: linear-gradient(135deg, #B90F24 0%, #D7192D 60%, #E8283D 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.bvc-card-waves {
+  position: absolute;
+  inset: 0;
+  opacity: 0.16;
+  pointer-events: none;
+  background-image: radial-gradient(circle at 100% 0%, rgba(255, 255, 255, 0.8) 0%, transparent 60%),
+                    radial-gradient(circle at 0% 100%, rgba(255, 196, 155, 0.6) 0%, transparent 50%);
+}
+
+/* Chip styling */
+.card-chip {
+  background: linear-gradient(135deg, #FFDF79 0%, #D8A232 50%, #C48E22 100%);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.6), 0 2px 4px rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(196, 142, 34, 0.7);
+}
+
+/* Custom scrollbar for sheets and lists */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(166, 154, 144, 0.35);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(166, 154, 144, 0.6);
+}
+
+/* Safe area insets for iOS devices */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 24px);
+}
+.pt-safe {
+  padding-top: env(safe-area-inset-top, 16px);
+}

@@ -1,0 +1,119 @@
+{
+  "version": 11,
+  "budget": {
+    "total": 20000,
+    "isConfigured": true,
+    "currency": "INR",
+    "lastUpdatedBy": "Chetan",
+    "lastUpdatedAt": "2026-10-29T19:12:03.086Z"
+  },
+  "expenses": [
+    {
+      "id": "exp_init_1",
+      "amount": 2100,
+      "purpose": "Dinner at Cafe",
+      "category": "Food",
+      "paidBy": "Chetan",
+      "recordedBy": "Chetan",
+      "date": "2026-10-29T17:12:03.086Z",
+      "createdAt": "2026-10-29T17:12:03.086Z",
+      "updatedAt": "2026-10-29T17:12:03.086Z"
+    },
+    {
+      "id": "exp_init_2",
+      "amount": 1800,
+      "purpose": "Villa Advance",
+      "category": "Stay",
+      "paidBy": "Priya",
+      "recordedBy": "Priya",
+      "date": "2026-10-29T07:12:03.086Z",
+      "createdAt": "2026-10-29T07:12:03.086Z",
+      "updatedAt": "2026-10-29T07:12:03.086Z"
+    },
+    {
+      "id": "exp_init_3",
+      "amount": 1250,
+      "purpose": "Bus Tickets",
+      "category": "Transport",
+      "paidBy": "Rahul",
+      "recordedBy": "Rahul",
+      "date": "2026-10-28T17:12:03.086Z",
+      "createdAt": "2026-10-28T17:12:03.086Z",
+      "updatedAt": "2026-10-28T17:12:03.086Z"
+    },
+    {
+      "id": "exp_init_4",
+      "amount": 900,
+      "purpose": "Beach Activities",
+      "category": "Activities",
+      "paidBy": "Neha",
+      "recordedBy": "Neha",
+      "date": "2026-10-28T13:12:03.086Z",
+      "createdAt": "2026-10-28T13:12:03.086Z",
+      "updatedAt": "2026-10-28T13:12:03.086Z"
+    },
+    {
+      "id": "exp_init_5",
+      "amount": 450,
+      "purpose": "Snacks & Drinks",
+      "category": "Shopping",
+      "paidBy": "Aakash",
+      "recordedBy": "Aakash",
+      "date": "2026-10-27T19:12:03.086Z",
+      "createdAt": "2026-10-27T19:12:03.086Z",
+      "updatedAt": "2026-10-27T19:12:03.086Z"
+    }
+  ],
+  "documents": [],
+  "activities": [
+    {
+      "id": "act_init_1",
+      "action": "expense_created",
+      "actor": "Chetan",
+      "targetId": "exp_init_1",
+      "targetTitle": "Dinner at Cafe",
+      "category": "Food",
+      "amount": 2100,
+      "timestamp": "2026-10-29T17:12:03.086Z",
+      "details": {
+        "description": "Added Dinner at Cafe (₹2,100) paid by Chetan"
+      }
+    },
+    {
+      "id": "act_init_2",
+      "action": "expense_created",
+      "actor": "Priya",
+      "targetId": "exp_init_2",
+      "targetTitle": "Villa Advance",
+      "category": "Stay",
+      "amount": 1800,
+      "timestamp": "2026-10-29T07:12:03.086Z",
+      "details": {
+        "description": "Added Villa Advance (₹1,800) paid by Priya"
+      }
+    },
+    {
+      "id": "act_init_3",
+      "action": "budget_configured",
+      "actor": "Chetan",
+      "targetId": "budget",
+      "targetTitle": "Trip Budget ₹20,000",
+      "amount": 20000,
+      "timestamp": "2026-10-27T17:12:03.086Z",
+      "details": {
+        "newValue": "₹20,000",
+        "description": "Configured shared trip budget"
+      }
+    }
+  ],
+  "members": [
+    "Chetan",
+    "Rahul",
+    "Priya",
+    "Aakash",
+    "Rohan",
+    "Neha",
+    "Sneha"
+  ],
+  "lastSyncedAt": "2026-10-29T19:12:03.086Z"
+}
