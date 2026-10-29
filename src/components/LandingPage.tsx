@@ -2,9 +2,7 @@
 
 import React, { useState } from 'react';
 import { useTrip } from '@/lib/trip-context';
-import { Palmtree, User, ArrowRight, Plane } from 'lucide-react';
-
-const SUGGESTED_NAMES = ['Chetan', 'Rahul', 'Priya', 'Aakash', 'Rohan', 'Neha', 'Sneha'];
+import { User, ArrowRight } from 'lucide-react';
 
 export function LandingPage() {
   const { setUserName } = useTrip();
@@ -21,58 +19,44 @@ export function LandingPage() {
     setUserName(trimmed);
   };
 
-  const handleSelectSuggested = (name: string) => {
-    setNameInput(name);
-    setError(null);
-  };
-
   return (
-    <div className="relative min-h-screen w-full flex flex-col justify-between bg-[#FBF5EC] overflow-hidden">
-      {/* Background travel landscape and soft sunset gradient */}
-      <div className="absolute inset-0 z-0 pointer-events-none">
-        <div className="absolute inset-0 bg-gradient-to-b from-[#FFFDF9] via-[#FBF5EC]/90 to-[#F6EDE2]" />
-        
-        {/* Decorative warm sun glow */}
-        <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[500px] h-[500px] rounded-full bg-gradient-to-b from-[#FFC49B]/30 to-[#F34D55]/10 blur-3xl" />
-
-        {/* Coastal silhouette illustration graphic */}
-        <div
-          className="absolute bottom-0 left-0 right-0 h-64 bg-cover bg-bottom opacity-75"
-          style={{
-            backgroundImage: "url('/images/landing_friends.png')",
-            backgroundRepeat: 'no-repeat',
-            backgroundPosition: 'center bottom',
-          }}
-        />
-      </div>
-
-      {/* Top Header / Brand Area */}
-      <div className="relative z-10 pt-12 px-6 flex flex-col items-center text-center">
-        <div className="w-14 h-14 rounded-2xl bg-white border border-cream-300 shadow-card flex items-center justify-center text-bvc-red mb-3">
-          <Palmtree className="w-8 h-8 stroke-[2]" />
+    <div className="min-h-screen w-full flex flex-col items-center justify-center bg-[#FEFBF6] px-6 py-12 select-none">
+      <div className="w-full max-w-[340px] flex flex-col items-center text-center">
+        {/* Top App Squircle Icon */}
+        <div className="w-[76px] h-[76px] rounded-[22px] bg-white border border-[#EFE5D8] shadow-[0_4px_16px_rgba(0,0,0,0.03)] flex items-center justify-center mb-4 transition-transform hover:scale-105 overflow-hidden">
+          <img
+            src="/images/bvc_icon.png"
+            alt="BVC Trip"
+            className="w-12 h-12 object-contain"
+          />
         </div>
-        <h2 className="text-xl font-extrabold text-bvc-text tracking-tight">BVC Trip</h2>
-        <p className="text-[10px] uppercase font-bold tracking-[0.25em] text-bvc-secondary mt-1">
+
+        {/* Brand Title */}
+        <h2 className="text-xl font-extrabold text-[#1A171D] tracking-tight">
+          BVC Trip
+        </h2>
+        <p className="text-[10px] uppercase font-bold tracking-[0.24em] text-[#8C8278] mt-1.5">
           Explore · Spend · Together
         </p>
-      </div>
 
-      {/* Center Welcome & Name Entry Card */}
-      <div className="relative z-10 px-6 max-w-md w-full mx-auto my-auto py-8">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl sm:text-4xl font-extrabold text-bvc-text tracking-tight leading-tight">
-            Welcome to <span className="text-bvc-red">BVC Trip!</span>
+        {/* Main Welcome Heading */}
+        <div className="mt-14 sm:mt-16 mb-10 text-center">
+          <h1 className="text-4xl sm:text-[44px] font-black text-[#1A171D] tracking-tight leading-[1.15]">
+            Welcome to
           </h1>
-          <p className="text-sm text-bvc-secondary mt-2 font-medium">
+          <h1 className="text-4xl sm:text-[44px] font-black text-[#DD1D32] tracking-tight leading-[1.15] mt-1">
+            BVC Trip!
+          </h1>
+          <p className="text-sm text-[#736B63] font-medium mt-3.5 tracking-tight">
             One trip. One budget. Countless memories.
           </p>
         </div>
 
-        {/* Name input form */}
-        <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Name Input & Form */}
+        <form onSubmit={handleSubmit} className="w-full space-y-4">
           <div>
-            <div className="relative rounded-2xl bg-white border border-cream-300 shadow-card px-4 py-3.5 flex items-center focus-within:ring-2 focus-within:ring-bvc-red/20 focus-within:border-bvc-red transition-all">
-              <User className="w-5 h-5 text-bvc-secondary mr-3 shrink-0" />
+            <div className="relative rounded-2xl bg-white border border-[#EFE5D8] shadow-[0_2px_8px_rgba(0,0,0,0.02)] px-4 py-3.5 flex items-center focus-within:ring-2 focus-within:ring-[#DD1D32]/20 focus-within:border-[#DD1D32] transition-all">
+              <User className="w-5 h-5 text-[#9E958C] mr-3 shrink-0 stroke-[1.8]" />
               <input
                 type="text"
                 placeholder="Enter your name"
@@ -81,62 +65,28 @@ export function LandingPage() {
                   setNameInput(e.target.value);
                   if (error) setError(null);
                 }}
-                className="w-full text-base font-semibold text-bvc-text placeholder:text-bvc-muted bg-transparent outline-none"
+                className="w-full text-base font-medium text-[#1A171D] placeholder:text-[#9E958C] bg-transparent outline-none"
                 autoFocus
               />
             </div>
             {error && (
-              <p className="text-xs text-bvc-error mt-2 font-medium px-2">{error}</p>
+              <p className="text-xs text-[#DD1D32] mt-2 font-medium text-left px-2">
+                {error}
+              </p>
             )}
           </div>
 
-          {/* Quick select chip pills */}
-          <div className="flex flex-wrap items-center justify-center gap-1.5 pt-1">
-            <span className="text-[11px] text-bvc-secondary mr-1">Quick select:</span>
-            {SUGGESTED_NAMES.map((name) => (
-              <button
-                key={name}
-                type="button"
-                onClick={() => handleSelectSuggested(name)}
-                className={`text-[11px] font-semibold px-2.5 py-1 rounded-full border transition-all ${
-                  nameInput === name
-                    ? 'bg-bvc-red text-white border-bvc-red'
-                    : 'bg-white/80 border-cream-300 text-bvc-secondary hover:border-bvc-red hover:text-bvc-red'
-                }`}
-              >
-                {name}
-              </button>
-            ))}
-          </div>
-
           {/* Let's Go Button */}
-          <div className="pt-3">
+          <div className="pt-1">
             <button
               type="submit"
-              className="w-full py-4 rounded-2xl bg-gradient-to-r from-bvc-deepRed to-bvc-red hover:from-bvc-red hover:to-bvc-redHighlight text-white font-bold text-base shadow-redGlow active:scale-[0.99] transition-all flex items-center justify-center space-x-2"
+              className="w-full py-4 rounded-full bg-gradient-to-r from-[#D7192D] to-[#E3263A] hover:from-[#C91326] hover:to-[#D7192D] text-white font-bold text-base shadow-[0_12px_28px_-6px_rgba(221,29,50,0.38)] active:scale-[0.98] transition-all flex items-center justify-center space-x-2"
             >
               <span>Let&apos;s Go</span>
-              <ArrowRight className="w-5 h-5" />
+              <ArrowRight className="w-5 h-5 stroke-[2.4]" />
             </button>
           </div>
         </form>
-      </div>
-
-      {/* Bottom Script Signature & Airplane Trail Accent */}
-      <div className="relative z-10 pb-8 px-6 flex items-center justify-between max-w-md w-full mx-auto">
-        <div className="text-left">
-          <p className="font-script text-2xl sm:text-3xl text-bvc-deepRed leading-tight -rotate-2 select-none drop-shadow-sm">
-            Same people Different places
-          </p>
-          <p className="font-script text-xl text-bvc-red pl-6 -mt-1 select-none">
-            BVC ♡
-          </p>
-        </div>
-
-        <div className="flex items-center space-x-1 text-bvc-secondary opacity-75">
-          <div className="border-t-2 border-dashed border-bvc-peach w-16" />
-          <Plane className="w-5 h-5 text-bvc-red -rotate-45" />
-        </div>
       </div>
     </div>
   );
