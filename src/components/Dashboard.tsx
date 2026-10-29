@@ -38,15 +38,28 @@ export function Dashboard() {
               </div>
             )}
 
-            {/* Personalized Greeting */}
-            <div className="pt-1 pb-1">
-              <h2 className="text-2xl font-extrabold text-bvc-text tracking-tight flex items-center space-x-1.5">
-                <span>Hi {userName || 'Traveler'}!</span>
-                <span>👋</span>
-              </h2>
-              <p className="text-xs font-semibold text-bvc-secondary mt-0.5">
-                Let&apos;s track our adventures
-              </p>
+            {/* Personalized Greeting & Illustrated Group Photo */}
+            <div className="pt-1 pb-1 flex items-center justify-between gap-3">
+              <div className="min-w-0 flex-1">
+                <h2 className="text-xl sm:text-2xl font-extrabold text-bvc-text tracking-tight flex items-center space-x-1.5 truncate">
+                  <span className="truncate">Hi {userName || 'Traveler'}!</span>
+                  <span className="shrink-0">👋</span>
+                </h2>
+                <p className="text-xs font-semibold text-bvc-secondary mt-0.5 truncate">
+                  Let&apos;s track our adventures
+                </p>
+              </div>
+
+              {/* Group Illustration Pill */}
+              <div className="shrink-0 w-32 h-[58px] min-[360px]:w-36 min-[360px]:h-16 sm:w-48 sm:h-[76px] rounded-[22px] min-[360px]:rounded-[26px] sm:rounded-[30px] overflow-hidden shadow-sm border border-cream-300/70 bg-cream-100 flex items-center justify-center">
+                <img
+                  src="/images/group_header.png"
+                  alt="BVC Trip Friends"
+                  className="w-full h-full object-cover object-[center_36%] select-none pointer-events-none"
+                  loading="eager"
+                  decoding="async"
+                />
+              </div>
             </div>
 
             {/* Virtual Red BVC Card */}

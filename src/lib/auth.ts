@@ -11,6 +11,10 @@ export function isOrganizer(name?: string | null): boolean {
   return (
     n === 'chetan k' ||
     n === 'chetan' ||
-    n.startsWith('chetan')
+    n === 'chethan k' ||
+    n === 'chethan' ||
+    n.startsWith('chetan') ||
+    n.startsWith('chethan')
   );
 }
+
