@@ -4,6 +4,13 @@ import { Expense, TripBudget, ActivityEvent, DocumentCategory } from '@/types';
 
 export const dynamic = 'force-dynamic';
 
+const NO_CACHE_HEADERS = {
+  'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+  'Pragma': 'no-cache',
+  'Expires': '0',
+  'Surrogate-Control': 'no-store',
+};
+
 export async function GET() {
   try {
     const status = await getStorageStatus();
@@ -14,7 +21,7 @@ export async function GET() {
           error: status.message,
           storage: status,
         },
-        { status: status.code === 'CREDENTIALS_MISSING' ? 503 : 500 }
+        { status: status.code === 'CREDENTIALS_MISSING' ? 503 : 500, headers: NO_CACHE_HEADERS }
       );
     }
 
@@ -24,13 +31,13 @@ export async function GET() {
       data: state,
       storage: status,
       version: state.version,
-    });
+    }, { headers: NO_CACHE_HEADERS });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Failed to fetch trip state';
     const status = await getStorageStatus().catch(() => null);
     return NextResponse.json(
       { success: false, error: message, storage: status },
-      { status: 500 }
+      { status: 500, headers: NO_CACHE_HEADERS }
     );
   }
 }
@@ -299,7 +306,7 @@ export async function POST(req: NextRequest) {
           data: result.state,
           version: result.state.version,
         },
-        { status: 409 }
+        { status: 409, headers: NO_CACHE_HEADERS }
       );
     }
 
@@ -307,10 +314,10 @@ export async function POST(req: NextRequest) {
       success: true,
       data: result.state,
       version: result.state.version,
-    });
+    }, { headers: NO_CACHE_HEADERS });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Server error processing mutation';
-    return NextResponse.json({ success: false, error: message }, { status: 500 });
+    return NextResponse.json({ success: false, error: message }, { status: 500, headers: NO_CACHE_HEADERS });
   }
 }
 

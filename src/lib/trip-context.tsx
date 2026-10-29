@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   TripState,
   Expense,
@@ -141,13 +141,26 @@ export function TripProvider({ children }: { children: React.ReactNode }) {
     } catch {}
   }, []);
 
-  // Fetch shared state from server
+  const isFetchingRef = useRef<boolean>(false);
+  const lastVersionRef = useRef<number>(0);
+
+  // Fetch shared state from server with cache busting and concurrency protection
   const fetchState = useCallback(async (isBackground = false) => {
+    // Avoid overlapping requests
+    if (isFetchingRef.current) return;
+    isFetchingRef.current = true;
+
     if (!isBackground) setIsLoading(true);
     else setIsSyncing(true);
 
     try {
-      const res = await fetch('/api/state', { cache: 'no-store' });
+      const res = await fetch(`/api/state?_t=${Date.now()}`, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          Pragma: 'no-cache',
+        },
+      });
       const data = await res.json().catch(() => null);
 
       if (data?.storage) {
@@ -164,30 +177,75 @@ export function TripProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (data.data) {
-        setState(data.data);
+        // Update if version changed or if initial load
+        if (!lastVersionRef.current || data.data.version !== lastVersionRef.current) {
+          lastVersionRef.current = data.data.version;
+          setState(data.data);
+        }
         setError(null);
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Error syncing state with Vercel Blob';
       if (!isBackground) setError(msg);
-      console.error('Sync error:', err);
+      // In background polling, log gentle warning without alarming user
+      console.warn('Background sync network retry scheduled:', err);
     } finally {
-      setIsLoading(false);
+      isFetchingRef.current = false;
+      if (!isBackground) setIsLoading(false);
       setIsSyncing(false);
     }
   }, []);
 
-  // Initial fetch
+  // Automated shared data synchronization (2.5s polling with Page Visibility & Reconnect handling)
   useEffect(() => {
-    fetchState();
-  }, [fetchState]);
+    // 1. Initial immediate fetch
+    fetchState(false);
 
-  // Periodic background synchronization every 7 seconds
-  useEffect(() => {
-    const interval = setInterval(() => {
+    // 2. Periodic polling every 2.5s while active and visible
+    let pollInterval: NodeJS.Timeout | null = null;
+
+    const startPolling = () => {
+      if (pollInterval) clearInterval(pollInterval);
+      pollInterval = setInterval(() => {
+        if (typeof document !== 'undefined' && document.hidden) return;
+        fetchState(true);
+      }, 2500);
+    };
+
+    const stopPolling = () => {
+      if (pollInterval) {
+        clearInterval(pollInterval);
+        pollInterval = null;
+      }
+    };
+
+    startPolling();
+
+    // 3. Tab visibility change: refresh immediately when returning to tab
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        stopPolling();
+      } else {
+        // Tab became visible again — sync immediately and restart interval
+        fetchState(true);
+        startPolling();
+      }
+    };
+
+    // 4. Online reconnection handler: sync immediately when coming back online
+    const handleOnline = () => {
       fetchState(true);
-    }, 7000);
-    return () => clearInterval(interval);
+      startPolling();
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('online', handleOnline);
+
+    return () => {
+      stopPolling();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('online', handleOnline);
+    };
   }, [fetchState]);
 
   // Financial calculations derived authoritatively from actual state
@@ -297,7 +355,10 @@ export function TripProvider({ children }: { children: React.ReactNode }) {
         const json = await res.json();
         if (res.status === 409) {
           showToast('Data was modified by another member. Latest changes reloaded.', 'error');
-          if (json.data) setState(json.data);
+          if (json.data) {
+            lastVersionRef.current = json.data.version;
+            setState(json.data);
+          }
           return false;
         }
 
@@ -305,6 +366,7 @@ export function TripProvider({ children }: { children: React.ReactNode }) {
           throw new Error(json.error || 'Failed to save expense');
         }
 
+        lastVersionRef.current = json.data.version;
         setState(json.data);
         closeAddExpense();
         showToast(
@@ -339,7 +401,10 @@ export function TripProvider({ children }: { children: React.ReactNode }) {
       const json = await res.json();
       if (res.status === 409) {
         showToast('Data was updated by another member. Latest changes loaded.', 'error');
-        if (json.data) setState(json.data);
+        if (json.data) {
+          lastVersionRef.current = json.data.version;
+          setState(json.data);
+        }
         closeDeleteConfirm();
         return false;
       }
@@ -348,6 +413,7 @@ export function TripProvider({ children }: { children: React.ReactNode }) {
         throw new Error(json.error || 'Failed to delete expense');
       }
 
+      lastVersionRef.current = json.data.version;
       setState(json.data);
       closeDeleteConfirm();
       showToast('Expense removed and recorded in history.', 'info');
@@ -378,7 +444,10 @@ export function TripProvider({ children }: { children: React.ReactNode }) {
         const json = await res.json();
         if (res.status === 409) {
           showToast('Data was updated by another member. Please retry.', 'error');
-          if (json.data) setState(json.data);
+          if (json.data) {
+            lastVersionRef.current = json.data.version;
+            setState(json.data);
+          }
           return false;
         }
 
@@ -386,6 +455,7 @@ export function TripProvider({ children }: { children: React.ReactNode }) {
           throw new Error(json.error || 'Failed to update budget');
         }
 
+        lastVersionRef.current = json.data.version;
         setState(json.data);
         closeBudgetModal();
         showToast(`Trip budget set to ₹${total.toLocaleString('en-IN')}`, 'success');
@@ -421,7 +491,10 @@ export function TripProvider({ children }: { children: React.ReactNode }) {
         const json = await res.json();
         if (res.status === 409) {
           showToast('State was modified during upload. Document saved, reloaded state.', 'info');
-          if (json.data) setState(json.data);
+          if (json.data) {
+            lastVersionRef.current = json.data.version;
+            setState(json.data);
+          }
           return false;
         }
 
@@ -429,7 +502,10 @@ export function TripProvider({ children }: { children: React.ReactNode }) {
           throw new Error(json.error || 'Failed to upload document');
         }
 
-        if (json.state) setState(json.state);
+        if (json.state) {
+          lastVersionRef.current = json.state.version;
+          setState(json.state);
+        }
         showToast(`Document "${title}" uploaded successfully!`, 'success');
         return true;
       } catch (err: unknown) {

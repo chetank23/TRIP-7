@@ -174,6 +174,7 @@ export class StorageOperationError extends Error {
 
 // In-process lock to serialize concurrent server requests
 let writeQueue: Promise<unknown> = Promise.resolve();
+let memoryCache: { state: TripState; timestamp: number } | null = null;
 
 export function getCleanToken(): string {
   const token = process.env.BLOB_READ_WRITE_TOKEN || '';
@@ -431,7 +432,12 @@ export async function readState(): Promise<TripState> {
         });
         if (response.ok) {
           const raw = await response.json();
-          return sanitizeState(raw);
+          const diskState = sanitizeState(raw);
+          if (memoryCache && memoryCache.state.version >= diskState.version) {
+            return memoryCache.state;
+          }
+          memoryCache = { state: diskState, timestamp: Date.now() };
+          return diskState;
         }
       }
 
@@ -509,6 +515,7 @@ export async function updateState(
         allowOverwrite: true,
         contentType: 'application/json',
       });
+      memoryCache = { state: nextState, timestamp: Date.now() };
       return { state: nextState, conflict: false };
     }
 
@@ -518,6 +525,7 @@ export async function updateState(
     const tempFile = `${stateFilePath}.${Date.now()}.tmp`;
     await fs.writeFile(tempFile, JSON.stringify(nextState, null, 2), 'utf-8');
     await fs.rename(tempFile, stateFilePath);
+    memoryCache = { state: nextState, timestamp: Date.now() };
 
     return { state: nextState, conflict: false };
   } finally {

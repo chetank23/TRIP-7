@@ -100,7 +100,7 @@ export function VirtualBvcCard() {
             <span className="text-[9px] uppercase tracking-widest text-white/60 block mb-0.5">
               EXP
             </span>
-            <span className="font-mono text-xs font-semibold text-white/95">09/2026</span>
+            <span className="font-mono text-xs font-semibold text-white/95">11/2026</span>
           </div>
 
           <div>
