@@ -177,8 +177,19 @@ let writeQueue: Promise<unknown> = Promise.resolve();
 let memoryCache: { state: TripState; timestamp: number } | null = null;
 
 export function getCleanToken(): string {
-  const token = process.env.BLOB_READ_WRITE_TOKEN || '';
-  return token.trim().replace(/^["']|["']$/g, '');
+  const token =
+    process.env.BLOB_READ_WRITE_TOKEN ||
+    process.env.BVC_TRIP_READ_WRITE_TOKEN ||
+    process.env.VERCEL_BLOB_READ_WRITE_TOKEN ||
+    (() => {
+      const key = Object.keys(process.env).find((k) => k.endsWith('_READ_WRITE_TOKEN') && process.env[k]);
+      return key ? process.env[key] : '';
+    })();
+  const clean = (token || '').trim().replace(/^["']|["']$/g, '');
+  if (clean && !process.env.BLOB_READ_WRITE_TOKEN) {
+    process.env.BLOB_READ_WRITE_TOKEN = clean;
+  }
+  return clean;
 }
 
 export function isCloudBlob(): boolean {
