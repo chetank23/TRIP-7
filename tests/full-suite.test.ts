@@ -274,9 +274,57 @@ async function runTestSuite() {
   assert.strictEqual(clearResult.state.activities[0].action, 'trip_reset', 'Reset activity logged');
   console.log('  ✔ Clean state verified: Expenses and documents wiped clean.\n');
 
-  console.log('🎉 ALL TESTS PASSED! NAVBAR CONTRACT, AUTO-SYNC & ORGANIZER PRIVILEGES FULLY VERIFIED!\n');
+  // Test I: Landing Page 7-Friend Profile & Playful Interaction Verification
+  console.log('Test I: Landing Page 7-Friend Profile & Playful Interaction Verification');
+  const { FRIEND_PROFILES, findProfileByName } = await import('@/lib/profiles');
+  assert.strictEqual(FRIEND_PROFILES.length, 7, 'Must have exactly 7 profiles');
 
-  console.log('🎉 ALL TESTS PASSED! NAVBAR CONTRACT & SHARED DATA SYNCHRONIZATION FULLY VERIFIED!\n');
+  const expectedTable: Record<string, { url: string; msg: string }> = {
+    'Chetan K': {
+      url: 'https://res.cloudinary.com/dccnccjgr/image/upload/v1793307425/CHETHAN_o38wnn.png',
+      msg: "Haha, that's you, Chetan! 😎",
+    },
+    'Rohith': {
+      url: 'https://res.cloudinary.com/dccnccjgr/image/upload/v1793307425/ROHTIH_n0co1m.png',
+      msg: 'Ayy Rohith, caught you! 😂',
+    },
+    'Dharma': {
+      url: 'https://res.cloudinary.com/dccnccjgr/image/upload/v1793307425/DHARMA_o7zets.jpg',
+      msg: "Dharma spotted! That's you! 😄",
+    },
+    'Adithi': {
+      url: 'https://res.cloudinary.com/dccnccjgr/image/upload/v1793307425/Adithi_hxtfpc.png',
+      msg: 'Hehe, Adithi found herself! 💖',
+    },
+    'Harshitha': {
+      url: 'https://res.cloudinary.com/dccnccjgr/image/upload/v1793307425/HARSH_g9rhfa.png',
+      msg: 'Harshitha, no hiding now! 😆',
+    },
+    'Vyshnavi': {
+      url: 'https://res.cloudinary.com/dccnccjgr/image/upload/v1793307425/VYSH_pghbo8.png',
+      msg: 'There you are, Vyshnavi! ✨',
+    },
+    'Lavanya': {
+      url: 'https://res.cloudinary.com/dccnccjgr/image/upload/v1793307424/LAVANYA_pmkkjk.jpg',
+      msg: 'Lavanya, we found you! 🫶',
+    },
+  };
+
+  for (const [name, expected] of Object.entries(expectedTable)) {
+    const profile = findProfileByName(name);
+    assert(profile, `Profile for ${name} must be found`);
+    assert.strictEqual(profile.photoUrl, expected.url, `URL mismatch for ${name}`);
+    assert.strictEqual(profile.message, expected.msg, `Message mismatch for ${name}`);
+  }
+
+  // Case-insensitive typing tests
+  assert.strictEqual(findProfileByName('chetan')?.name, 'Chetan K');
+  assert.strictEqual(findProfileByName('  Adithi  ')?.name, 'Adithi');
+  assert.strictEqual(findProfileByName('HARSHITHA')?.name, 'Harshitha');
+  assert.strictEqual(findProfileByName('unknown_person'), null, 'Unrecognized names must return null');
+  console.log('  ✔ All 7 Cloudinary URLs, messages & case-insensitive matching verified.\n');
+
+  console.log('🎉 ALL TESTS PASSED! NAVBAR CONTRACT, AUTO-SYNC, ORGANIZER PRIVILEGES & LANDING PROFILES FULLY VERIFIED!\n');
 }
 
 runTestSuite().catch((err) => {

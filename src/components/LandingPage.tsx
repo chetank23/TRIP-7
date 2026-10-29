@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTrip } from '@/lib/trip-context';
 import { User, ArrowRight } from 'lucide-react';
+import { FRIEND_PROFILES, findProfileByName, FriendProfile } from '@/lib/profiles';
 
 const DEFAULT_QUICK_MEMBERS = [
   'Chetan K',
@@ -19,8 +20,52 @@ export function LandingPage() {
   const [nameInput, setNameInput] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
 
+  // Profile showcase states
+  const [activeSlide, setActiveSlide] = useState<number>(0);
+  const [selectedProfile, setSelectedProfile] = useState<FriendProfile | null>(null);
+  const [imageErrorMap, setImageErrorMap] = useState<Record<string, boolean>>({});
+
   const memberList =
     state?.members && state.members.length > 0 ? state.members : DEFAULT_QUICK_MEMBERS;
+
+  // Preload Cloudinary profile images on mount for instant zero-lag transitions
+  useEffect(() => {
+    FRIEND_PROFILES.forEach((profile) => {
+      if (typeof window !== 'undefined') {
+        const img = new window.Image();
+        img.src = profile.photoUrl;
+      }
+    });
+  }, []);
+
+  // Default automatic 1.5-second horizontal slideshow (active when no profile is selected)
+  useEffect(() => {
+    if (selectedProfile) return;
+
+    const interval = setInterval(() => {
+      setActiveSlide((prev) => (prev + 1) % FRIEND_PROFILES.length);
+    }, 1500);
+
+    return () => clearInterval(interval);
+  }, [selectedProfile]);
+
+  // Handle manual input typing with case-insensitive matching
+  const handleInputChange = (val: string) => {
+    setNameInput(val);
+    if (error) setError(null);
+
+    const matched = findProfileByName(val);
+    setSelectedProfile(matched);
+  };
+
+  // Handle Quick Pick chip clicks
+  const handleSelectMember = (member: string) => {
+    const matched = findProfileByName(member);
+    const canonical = matched ? matched.name : member;
+    setNameInput(canonical);
+    setSelectedProfile(matched);
+    if (error) setError(null);
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,38 +74,111 @@ export function LandingPage() {
       setError('Please enter your name to continue');
       return;
     }
-    setUserName(trimmed);
+    const matched = findProfileByName(trimmed);
+    const finalName = matched ? matched.name : trimmed;
+    setUserName(finalName);
   };
 
+  // Determine currently visible profile: selected profile overrides slideshow
+  const currentProfile = selectedProfile || FRIEND_PROFILES[activeSlide] || FRIEND_PROFILES[0];
+
   return (
-    <div className="min-h-screen w-full flex flex-col items-center justify-center bg-[#FEFBF6] px-6 py-12 select-none">
+    <div className="min-h-screen w-full flex flex-col items-center justify-center bg-[#FEFBF6] px-6 py-10 select-none">
       <div className="w-full max-w-[340px] flex flex-col items-center text-center">
         {/* Top App Squircle Icon */}
-        <div className="w-[76px] h-[76px] rounded-[22px] bg-white border border-[#EFE5D8] shadow-[0_4px_16px_rgba(0,0,0,0.03)] flex items-center justify-center mb-4 transition-transform hover:scale-105 overflow-hidden">
+        <div className="w-[72px] h-[72px] rounded-[22px] bg-white border border-[#EFE5D8] shadow-[0_4px_16px_rgba(0,0,0,0.03)] flex items-center justify-center mb-3 transition-transform hover:scale-105 overflow-hidden">
           <img
             src="/images/bvc_icon.png"
             alt="BVC Trip"
-            className="w-12 h-12 object-contain"
+            className="w-11 h-11 object-contain"
           />
         </div>
 
-        {/* Brand Title */}
+        {/* Brand Title & Tagline */}
         <h2 className="text-xl font-extrabold text-[#1A171D] tracking-tight">
           BVC Trip
         </h2>
-        <p className="text-[10px] uppercase font-bold tracking-[0.24em] text-[#8C8278] mt-1.5">
+        <p className="text-[10px] uppercase font-bold tracking-[0.24em] text-[#8C8278] mt-1">
           Explore · Spend · Together
         </p>
 
+        {/* Dedicated Photo Showcase (Positioned Above Heading) */}
+        <div className="mt-5 flex flex-col items-center">
+          {/* Rounded Portrait Card */}
+          <div className="relative w-28 h-28 sm:w-32 sm:h-32 rounded-[28px] bg-white border-2 border-white shadow-[0_10px_25px_rgba(0,0,0,0.06)] overflow-hidden flex items-center justify-center transition-all duration-300">
+            {currentProfile && (
+              <img
+                key={currentProfile.name}
+                src={currentProfile.photoUrl}
+                alt={`${currentProfile.name} profile portrait`}
+                className="w-full h-full object-cover object-top transition-opacity duration-300 animate-in fade-in select-none pointer-events-none"
+                loading="eager"
+                onError={() => {
+                  setImageErrorMap((prev) => ({ ...prev, [currentProfile.name]: true }));
+                }}
+              />
+            )}
+
+            {/* Fallback avatar if Cloudinary image fails to load */}
+            {currentProfile && imageErrorMap[currentProfile.name] && (
+              <div className="absolute inset-0 bg-gradient-to-tr from-[#DD1D32] to-[#FF7A8A] text-white flex items-center justify-center font-extrabold text-2xl">
+                {currentProfile.initials}
+              </div>
+            )}
+
+            {/* Subtle name badge during automatic slideshow */}
+            {!selectedProfile && currentProfile && (
+              <div className="absolute bottom-1.5 inset-x-2 text-center pointer-events-none">
+                <span className="inline-block px-2.5 py-0.5 rounded-full bg-black/45 backdrop-blur-sm text-[10px] font-bold text-white tracking-wide truncate max-w-full">
+                  {currentProfile.name}
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Status Area: Personalized Message Pill or 7 Pagination Dots */}
+          <div className="h-8 mt-2 flex items-center justify-center">
+            {selectedProfile ? (
+              /* Playful Personalized Message Pill */
+              <div
+                key={selectedProfile.name}
+                className="animate-in fade-in slide-in-from-bottom-2 duration-300 inline-flex items-center gap-1 px-3 py-1 rounded-full bg-white border border-[#EFE5D8] shadow-[0_2px_8px_rgba(0,0,0,0.04)] text-xs font-bold text-[#1A171D]"
+              >
+                <span>{selectedProfile.message}</span>
+              </div>
+            ) : (
+              /* Automatic Slideshow 7 Pagination Dots */
+              <div className="flex items-center space-x-1.5 py-1">
+                {FRIEND_PROFILES.map((p, idx) => {
+                  const isActive = idx === activeSlide;
+                  return (
+                    <button
+                      key={p.name}
+                      type="button"
+                      aria-label={`Slide ${p.name}`}
+                      onClick={() => setActiveSlide(idx)}
+                      className={`transition-all duration-300 rounded-full ${
+                        isActive
+                          ? 'w-4 h-1.5 bg-[#DD1D32]'
+                          : 'w-1.5 h-1.5 bg-[#E5DCD0] hover:bg-[#C9BCAD]'
+                      }`}
+                    />
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+
         {/* Main Welcome Heading */}
-        <div className="mt-14 sm:mt-16 mb-10 text-center">
-          <h1 className="text-4xl sm:text-[44px] font-black text-[#1A171D] tracking-tight leading-[1.15]">
+        <div className="mt-4 mb-7 text-center">
+          <h1 className="text-3xl sm:text-[38px] font-black text-[#1A171D] tracking-tight leading-[1.12]">
             Welcome to
           </h1>
-          <h1 className="text-4xl sm:text-[44px] font-black text-[#DD1D32] tracking-tight leading-[1.15] mt-1">
+          <h1 className="text-3xl sm:text-[38px] font-black text-[#DD1D32] tracking-tight leading-[1.12] mt-0.5">
             BVC Trip!
           </h1>
-          <p className="text-sm text-[#736B63] font-medium mt-3.5 tracking-tight">
+          <p className="text-xs sm:text-sm text-[#736B63] font-medium mt-2.5 tracking-tight">
             One trip. One budget. Countless memories.
           </p>
         </div>
@@ -74,10 +192,7 @@ export function LandingPage() {
                 type="text"
                 placeholder="Enter your name"
                 value={nameInput}
-                onChange={(e) => {
-                  setNameInput(e.target.value);
-                  if (error) setError(null);
-                }}
+                onChange={(e) => handleInputChange(e.target.value)}
                 className="w-full text-base font-medium text-[#1A171D] placeholder:text-[#9E958C] bg-transparent outline-none"
                 autoFocus
               />
@@ -91,7 +206,7 @@ export function LandingPage() {
 
           {/* Quick Picks Section */}
           <div className="pt-1 text-left">
-            <div className="flex items-center justify-between mb-2.5 px-1">
+            <div className="flex items-center justify-between mb-2 px-1">
               <span className="text-[11px] font-bold text-[#8C8278] uppercase tracking-wider">
                 Quick Pick
               </span>
@@ -101,15 +216,14 @@ export function LandingPage() {
             </div>
             <div className="flex flex-wrap gap-2 justify-start">
               {memberList.map((member) => {
-                const isSelected = nameInput.trim().toLowerCase() === member.toLowerCase();
+                const isSelected =
+                  (selectedProfile && selectedProfile.name.toLowerCase() === member.toLowerCase()) ||
+                  nameInput.trim().toLowerCase() === member.toLowerCase();
                 return (
                   <button
                     key={member}
                     type="button"
-                    onClick={() => {
-                      setNameInput(member);
-                      if (error) setError(null);
-                    }}
+                    onClick={() => handleSelectMember(member)}
                     className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all border ${
                       isSelected
                         ? 'bg-[#DD1D32] text-white border-[#DD1D32] shadow-[0_4px_12px_rgba(221,29,50,0.3)] scale-[1.03]'
