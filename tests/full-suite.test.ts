@@ -68,8 +68,8 @@ async function runTestSuite() {
       amount: 750,
       purpose: 'Seafood Lunch at Shack',
       category: 'Food' as const,
-      paidBy: 'Chetan',
-      recordedBy: 'Chetan',
+      paidBy: 'Chetan K',
+      recordedBy: 'Chetan K',
       date: now,
       createdAt: now,
       updatedAt: now,
@@ -77,7 +77,7 @@ async function runTestSuite() {
     const newAct = {
       id: `act_${Date.now()}`,
       action: 'expense_created' as const,
-      actor: 'Chetan',
+      actor: 'Chetan K',
       targetId: testExpId,
       targetTitle: newExp.purpose,
       category: newExp.category,
@@ -97,7 +97,7 @@ async function runTestSuite() {
   const updatedSpent = addResult.state.expenses.reduce((s, e) => s + e.amount, 0);
   assert.strictEqual(updatedSpent, initialSpent + 750, 'Total spent should include +750');
   console.log(`  ✔ Expense added. Total spent updated from ₹${initialSpent} to ₹${updatedSpent}`);
-  console.log(`  ✔ Activity audit event appended for actor "Chetan"\n`);
+  console.log(`  ✔ Activity audit event appended for actor "Chetan K"\n`);
 
   // Test 5: Editing an Existing Expense
   console.log('Test 5: Editing an Existing Expense');
@@ -108,7 +108,7 @@ async function runTestSuite() {
     const editAct = {
       id: `act_edit_${Date.now()}`,
       action: 'expense_updated' as const,
-      actor: 'Rahul',
+      actor: 'Adithi',
       targetId: testExpId,
       targetTitle: 'Seafood Lunch (Special Platter)',
       amount: 850,
@@ -141,7 +141,7 @@ async function runTestSuite() {
     const deleteAct = {
       id: `act_del_${Date.now()}`,
       action: 'expense_deleted' as const,
-      actor: 'Priya',
+      actor: 'Harshitha',
       targetId: testExpId,
       targetTitle: toDelete.purpose,
       amount: toDelete.amount,
@@ -158,7 +158,7 @@ async function runTestSuite() {
   assert(!deleteResult.state.expenses.some((e) => e.id === testExpId), 'Expense must be deleted');
   const deleteRecord = deleteResult.state.activities.find((a) => a.action === 'expense_deleted');
   assert(deleteRecord, 'Deletion audit event must be permanently recorded');
-  assert.strictEqual(deleteRecord.actor, 'Priya', 'Audit records exact actor who performed deletion');
+  assert.strictEqual(deleteRecord.actor, 'Harshitha', 'Audit records exact actor who performed deletion');
   console.log('  ✔ Expense removed; historical audit evidence preserved\n');
 
   // Test 8: Document PDF Storage & Magic Bytes Validation

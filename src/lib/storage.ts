@@ -6,15 +6,30 @@ import { TripState, StorageStatus, StorageStatusCode, StorageStatusText } from '
 export const STATE_BLOB_PATHNAME = 'state/bvc-trip-state.json';
 const LOCAL_BLOB_DIR = path.join(process.cwd(), '.local-blob');
 
-const DEFAULT_MEMBERS = [
-  'Chetan',
-  'Rahul',
-  'Priya',
-  'Aakash',
-  'Rohan',
-  'Neha',
-  'Sneha',
+export const DEFAULT_MEMBERS = [
+  'Chetan K',
+  'Adithi',
+  'Harshitha',
+  'Dharma',
+  'Lavanya',
+  'Rohith',
+  'Vyshnavi',
 ];
+
+export const OLD_TO_NEW_MEMBERS: Record<string, string> = {
+  'Chetan': 'Chetan K',
+  'Rahul': 'Adithi',
+  'Priya': 'Harshitha',
+  'Aakash': 'Dharma',
+  'Rohan': 'Lavanya',
+  'Neha': 'Rohith',
+  'Sneha': 'Vyshnavi',
+};
+
+function migrateMemberName(name?: string): string {
+  if (!name) return 'Chetan K';
+  return OLD_TO_NEW_MEMBERS[name] || name;
+}
 
 export const INITIAL_STATE: TripState = {
   version: 1,
@@ -22,7 +37,7 @@ export const INITIAL_STATE: TripState = {
     total: 20000,
     isConfigured: true,
     currency: 'INR',
-    lastUpdatedBy: 'Chetan',
+    lastUpdatedBy: 'Chetan K',
     lastUpdatedAt: new Date().toISOString(),
   },
   expenses: [
@@ -31,8 +46,8 @@ export const INITIAL_STATE: TripState = {
       amount: 450,
       purpose: 'Dinner at Cafe',
       category: 'Food',
-      paidBy: 'Chetan',
-      recordedBy: 'Chetan',
+      paidBy: 'Chetan K',
+      recordedBy: 'Chetan K',
       date: new Date().toISOString(),
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -42,8 +57,8 @@ export const INITIAL_STATE: TripState = {
       amount: 1200,
       purpose: 'Bus Tickets',
       category: 'Transport',
-      paidBy: 'Rahul',
-      recordedBy: 'Rahul',
+      paidBy: 'Adithi',
+      recordedBy: 'Adithi',
       date: new Date(Date.now() - 3600000 * 5).toISOString(),
       createdAt: new Date(Date.now() - 3600000 * 5).toISOString(),
       updatedAt: new Date(Date.now() - 3600000 * 5).toISOString(),
@@ -53,8 +68,8 @@ export const INITIAL_STATE: TripState = {
       amount: 2500,
       purpose: 'Villa Advance',
       category: 'Stay',
-      paidBy: 'Priya',
-      recordedBy: 'Priya',
+      paidBy: 'Harshitha',
+      recordedBy: 'Harshitha',
       date: new Date(Date.now() - 3600000 * 24).toISOString(),
       createdAt: new Date(Date.now() - 3600000 * 24).toISOString(),
       updatedAt: new Date(Date.now() - 3600000 * 24).toISOString(),
@@ -64,8 +79,8 @@ export const INITIAL_STATE: TripState = {
       amount: 350,
       purpose: 'Snacks & Drinks',
       category: 'Shopping',
-      paidBy: 'Aakash',
-      recordedBy: 'Aakash',
+      paidBy: 'Dharma',
+      recordedBy: 'Dharma',
       date: new Date(Date.now() - 3600000 * 28).toISOString(),
       createdAt: new Date(Date.now() - 3600000 * 28).toISOString(),
       updatedAt: new Date(Date.now() - 3600000 * 28).toISOString(),
@@ -75,8 +90,8 @@ export const INITIAL_STATE: TripState = {
       amount: 300,
       purpose: 'Auto Fare',
       category: 'Transport',
-      paidBy: 'Rohan',
-      recordedBy: 'Rohan',
+      paidBy: 'Lavanya',
+      recordedBy: 'Lavanya',
       date: new Date(Date.now() - 3600000 * 30).toISOString(),
       createdAt: new Date(Date.now() - 3600000 * 30).toISOString(),
       updatedAt: new Date(Date.now() - 3600000 * 30).toISOString(),
@@ -86,8 +101,8 @@ export const INITIAL_STATE: TripState = {
       amount: 900,
       purpose: 'Beach Activities',
       category: 'Activities',
-      paidBy: 'Neha',
-      recordedBy: 'Neha',
+      paidBy: 'Rohith',
+      recordedBy: 'Rohith',
       date: new Date(Date.now() - 3600000 * 48).toISOString(),
       createdAt: new Date(Date.now() - 3600000 * 48).toISOString(),
       updatedAt: new Date(Date.now() - 3600000 * 48).toISOString(),
@@ -98,7 +113,7 @@ export const INITIAL_STATE: TripState = {
     {
       id: 'act_1',
       action: 'expense_created',
-      actor: 'Chetan',
+      actor: 'Chetan K',
       targetId: 'exp_1',
       targetTitle: 'Dinner at Cafe',
       category: 'Food',
@@ -109,7 +124,7 @@ export const INITIAL_STATE: TripState = {
     {
       id: 'act_2',
       action: 'expense_updated',
-      actor: 'Rahul',
+      actor: 'Adithi',
       targetId: 'exp_2',
       targetTitle: 'Bus Tickets',
       category: 'Transport',
@@ -120,7 +135,7 @@ export const INITIAL_STATE: TripState = {
     {
       id: 'act_3',
       action: 'expense_created',
-      actor: 'Priya',
+      actor: 'Harshitha',
       targetId: 'exp_3',
       targetTitle: 'Villa Advance',
       category: 'Stay',
@@ -131,7 +146,7 @@ export const INITIAL_STATE: TripState = {
     {
       id: 'act_4',
       action: 'budget_configured',
-      actor: 'Chetan',
+      actor: 'Chetan K',
       targetId: 'budget',
       targetTitle: 'Trip Budget ₹ 20,000',
       amount: 20000,
@@ -160,20 +175,40 @@ export class StorageOperationError extends Error {
 // In-process lock to serialize concurrent server requests
 let writeQueue: Promise<unknown> = Promise.resolve();
 
+export function getCleanToken(): string {
+  const token = process.env.BLOB_READ_WRITE_TOKEN || '';
+  return token.trim().replace(/^["']|["']$/g, '');
+}
+
+export function isCloudBlob(): boolean {
+  const mode = process.env.BLOB_STORAGE_MODE || process.env.BLOB_MODE;
+  if (mode === 'local') return false;
+
+  const token = getCleanToken();
+  if (!token || !token.startsWith('vercel_blob_rw_') || token.includes('local_test')) {
+    return false;
+  }
+  return true;
+}
+
+export function isLocalBlob(): boolean {
+  return !isCloudBlob();
+}
+
 export function hasVercelBlobToken(): boolean {
-  const token = process.env.BLOB_READ_WRITE_TOKEN;
-  return Boolean(token && token.trim().length > 0);
+  if (isCloudBlob()) return true;
+  if (process.env.VERCEL === '1') return false;
+  return true;
 }
 
 export function isCloudBlobToken(): boolean {
-  const token = process.env.BLOB_READ_WRITE_TOKEN;
-  return Boolean(token && token.startsWith('vercel_blob_rw_'));
+  return isCloudBlob();
 }
 
 function requireBlobToken(): void {
   if (!hasVercelBlobToken()) {
     throw new StorageConfigurationError(
-      'BLOB_READ_WRITE_TOKEN is not configured in the environment. Please configure it in .env.local or your Vercel project.'
+      'BLOB_READ_WRITE_TOKEN is missing on Vercel deployment. Please link a Vercel Blob store in project settings.'
     );
   }
 }
@@ -185,6 +220,49 @@ function getLocalBlobPath(pathname: string): string {
 
 async function ensureLocalBlobDir(filePath: string): Promise<void> {
   await fs.mkdir(path.dirname(filePath), { recursive: true });
+}
+
+function sanitizeState(raw: unknown): TripState {
+  if (!raw || typeof raw !== 'object') {
+    return { ...INITIAL_STATE };
+  }
+  const obj = raw as Partial<TripState>;
+
+  const rawMembers = Array.isArray(obj.members) ? obj.members : [];
+  const hasOldDefaults = rawMembers.some((m) => OLD_TO_NEW_MEMBERS[m]);
+  const members =
+    hasOldDefaults || rawMembers.length === 0
+      ? [...DEFAULT_MEMBERS]
+      : rawMembers.map(migrateMemberName);
+
+  const rawExpenses = Array.isArray(obj.expenses) ? obj.expenses : [...INITIAL_STATE.expenses];
+  const expenses = rawExpenses.map((e) => ({
+    ...e,
+    paidBy: migrateMemberName(e.paidBy),
+    recordedBy: migrateMemberName(e.recordedBy),
+  }));
+
+  const rawActivities = Array.isArray(obj.activities) ? obj.activities : [...INITIAL_STATE.activities];
+  const activities = rawActivities.map((a) => ({
+    ...a,
+    actor: migrateMemberName(a.actor),
+  }));
+
+  return {
+    version: typeof obj.version === 'number' ? obj.version : 1,
+    budget: {
+      total: typeof obj.budget?.total === 'number' ? obj.budget.total : INITIAL_STATE.budget.total,
+      isConfigured: typeof obj.budget?.isConfigured === 'boolean' ? obj.budget.isConfigured : true,
+      currency: obj.budget?.currency || 'INR',
+      lastUpdatedBy: migrateMemberName(obj.budget?.lastUpdatedBy),
+      lastUpdatedAt: obj.budget?.lastUpdatedAt || new Date().toISOString(),
+    },
+    expenses,
+    documents: Array.isArray(obj.documents) ? obj.documents : [...INITIAL_STATE.documents],
+    activities,
+    members,
+    lastSyncedAt: obj.lastSyncedAt || new Date().toISOString(),
+  };
 }
 
 /**
@@ -352,7 +430,8 @@ export async function readState(): Promise<TripState> {
           headers: { 'Cache-Control': 'no-cache, no-store' },
         });
         if (response.ok) {
-          return (await response.json()) as TripState;
+          const raw = await response.json();
+          return sanitizeState(raw);
         }
       }
 
@@ -375,9 +454,10 @@ export async function readState(): Promise<TripState> {
   try {
     await ensureLocalBlobDir(stateFilePath);
     const content = await fs.readFile(stateFilePath, 'utf-8');
-    return JSON.parse(content) as TripState;
+    const parsed = JSON.parse(content);
+    return sanitizeState(parsed);
   } catch (err: unknown) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
+    if ((err as NodeJS.ErrnoException).code === 'ENOENT' || err instanceof SyntaxError) {
       await ensureLocalBlobDir(stateFilePath);
       await fs.writeFile(stateFilePath, JSON.stringify(INITIAL_STATE, null, 2), 'utf-8');
       return INITIAL_STATE;

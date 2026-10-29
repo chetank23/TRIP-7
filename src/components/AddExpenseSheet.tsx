@@ -46,7 +46,17 @@ export function AddExpenseSheet() {
   const [formError, setFormError] = useState<string | null>(null);
 
   // Group members
-  const members = state?.members && state.members.length > 0 ? state.members : [userName || 'Chetan'];
+  const DEFAULT_MEMBERS = [
+    'Chetan K',
+    'Adithi',
+    'Harshitha',
+    'Dharma',
+    'Lavanya',
+    'Rohith',
+    'Vyshnavi',
+  ];
+  const members =
+    state?.members && state.members.length > 0 ? state.members : DEFAULT_MEMBERS;
 
   // Initialize or reset form values
   useEffect(() => {
@@ -67,7 +77,7 @@ export function AddExpenseSheet() {
       setAmount('');
       setPurpose('');
       setCategory('Food');
-      setPaidBy(userName || (members[0] ?? 'Chetan'));
+      setPaidBy(userName || (members[0] ?? 'Chetan K'));
       // Current local date/time for datetime-local input
       const now = new Date();
       const localIso = new Date(now.getTime() - now.getTimezoneOffset() * 60000)

@@ -39,7 +39,18 @@ export default function SettingsPage() {
 
   const currentBudget = state?.budget?.total || 0;
   const isBudgetConfigured = Boolean(state?.budget?.isConfigured);
-  const members = state?.members || ['Chetan', 'Rahul', 'Priya', 'Aakash', 'Rohan', 'Neha', 'Sneha'];
+  const members =
+    state?.members && state.members.length > 0
+      ? state.members
+      : [
+          'Chetan K',
+          'Adithi',
+          'Harshitha',
+          'Dharma',
+          'Lavanya',
+          'Rohith',
+          'Vyshnavi',
+        ];
 
   const handleSaveName = (e: React.FormEvent) => {
     e.preventDefault();
