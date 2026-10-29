@@ -15,6 +15,7 @@
 
 # local data
 /data/uploads
+/.local-blob
 
 # misc
 .DS_Store

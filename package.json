@@ -7,10 +7,12 @@
     "build": "next build",
     "start": "next start",
     "test": "tsx tests/full-suite.test.ts",
+    "test:local": "tsx tests/full-suite.test.ts --local",
+    "test:cloud": "tsx tests/full-suite.test.ts",
     "lint": "next lint"
   },
   "dependencies": {
-    "@vercel/blob": "^0.25.1",
+    "@vercel/blob": "^2.8.2",
     "clsx": "^2.1.1",
     "date-fns": "^3.6.0",
     "lucide-react": "^0.453.0",
