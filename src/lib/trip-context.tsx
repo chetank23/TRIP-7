@@ -201,12 +201,12 @@ export function TripProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  // Automated shared data synchronization (2.5s polling with Page Visibility & Reconnect handling)
+  // Automated shared data synchronization (30s polling while active in page, with Page Visibility & Reconnect handling)
   useEffect(() => {
     // 1. Initial immediate fetch
     fetchState(false);
 
-    // 2. Periodic polling every 2.5s while active and visible
+    // 2. Periodic polling every 30s while active and visible
     let pollInterval: NodeJS.Timeout | null = null;
 
     const startPolling = () => {
@@ -214,7 +214,7 @@ export function TripProvider({ children }: { children: React.ReactNode }) {
       pollInterval = setInterval(() => {
         if (typeof document !== 'undefined' && document.hidden) return;
         fetchState(true);
-      }, 2500);
+      }, 30000); // 30 seconds interval when active
     };
 
     const stopPolling = () => {

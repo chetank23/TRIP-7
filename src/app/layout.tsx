@@ -12,8 +12,20 @@ import './globals.css';
 export const metadata: Metadata = {
   title: 'BVC Trip — Shared Trip Budget Management',
   description: 'Premium banking-style shared trip budget management for seven friends.',
+  manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'BVC Trip',
+  },
   icons: {
-    icon: '/favicon.ico',
+    icon: [
+      { url: '/icon.svg', type: 'image/svg+xml' },
+      { url: '/icon-192.png', sizes: '192x192', type: 'image/png' },
+    ],
+    apple: [
+      { url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
+    ],
   },
 };
 
@@ -23,7 +35,7 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   viewportFit: 'cover',
-  themeColor: '#FBF5EC',
+  themeColor: '#D7192D',
 };
 
 export default function RootLayout({

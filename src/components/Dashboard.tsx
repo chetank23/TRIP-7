@@ -8,6 +8,7 @@ import { BudgetSummaryCard } from '@/components/BudgetSummaryCard';
 import { CategorySummaryGrid } from '@/components/CategorySummaryGrid';
 import { RecentTransactions } from '@/components/RecentTransactions';
 import { LoadingSkeleton } from '@/components/LoadingSkeleton';
+import { InstallAppBanner } from '@/components/InstallAppBanner';
 import { AlertTriangle, CloudOff } from 'lucide-react';
 
 export function Dashboard() {
@@ -37,6 +38,9 @@ export function Dashboard() {
                 </div>
               </div>
             )}
+
+            {/* Install PWA Prompt Banner */}
+            <InstallAppBanner />
 
             {/* Personalized Greeting & Illustrated Group Photo */}
             <div className="pt-1 pb-1 flex items-center justify-between gap-3">

@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useTrip } from '@/lib/trip-context';
 import { User, ArrowRight } from 'lucide-react';
 import { FRIEND_PROFILES, findProfileByName, FriendProfile } from '@/lib/profiles';
+import { InstallAppButton } from '@/components/InstallAppButton';
 
 const DEFAULT_QUICK_MEMBERS = [
   'Chetan K',
@@ -239,6 +240,11 @@ export function LandingPage() {
               <span>Let&apos;s Go</span>
               <ArrowRight className="w-5 h-5 stroke-[2.4]" />
             </button>
+          </div>
+
+          {/* Install App Shortcut */}
+          <div className="pt-2 flex justify-center">
+            <InstallAppButton variant="pill" />
           </div>
         </form>
       </div>

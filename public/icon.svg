@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#EF4444" />
+      <stop offset="50%" stop-color="#D7192D" />
+      <stop offset="100%" stop-color="#991B1B" />
+    </linearGradient>
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFE8D6" />
+      <stop offset="100%" stop-color="#FFC49B" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Outer squircle -->
+  <rect x="16" y="16" width="480" height="480" rx="108" fill="url(#bgGrad)" />
+  <rect x="16" y="16" width="480" height="480" rx="108" fill="none" stroke="#FFFFFF" stroke-width="6" stroke-opacity="0.2" />
+  
+  <!-- Stylized Palm Tree -->
+  <g transform="translate(256, 215) scale(3.8)">
+    <!-- Palm Trunk -->
+    <path d="M-3 26 C -2 10, -1 -2, 0 -16 C 1 -2, 2 10, 3 26 Z" fill="url(#goldGrad)" />
+    <!-- Fronds -->
+    <path d="M0 -16 C -14 -32, -34 -28, -38 -16 C -30 -16, -16 -20, 0 -16" fill="#FFFBF5" />
+    <path d="M0 -16 C 14 -32, 34 -28, 38 -16 C 30 -16, 16 -20, 0 -16" fill="#FFFBF5" />
+    <path d="M0 -16 C -16 -42, -10 -50, -4 -42 C -4 -32, -2 -24, 0 -16" fill="#FFFBF5" />
+    <path d="M0 -16 C 16 -42, 10 -50, 4 -42 C 4 -32, 2 -24, 0 -16" fill="#FFFBF5" />
+    <path d="M0 -16 C -3 -50, 0 -54, 3 -50 C 3 -38, 1 -24, 0 -16" fill="#FFFBF5" />
+  </g>
+  
+  <!-- BVC TRIP Title -->
+  <text x="256" y="405" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="900" font-size="52" fill="#FFFFFF" text-anchor="middle" letter-spacing="4">
+    BVC TRIP
+  </text>
+  <text x="256" y="442" font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="700" font-size="18" fill="#FFC49B" text-anchor="middle" letter-spacing="3">
+    7 FRIENDS · 1 BUDGET
+  </text>
+</svg>

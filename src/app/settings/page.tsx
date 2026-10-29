@@ -20,7 +20,10 @@ import {
   Trash2,
   Lock,
   AlertTriangle,
+  Smartphone,
+  Download,
 } from 'lucide-react';
+import { InstallAppButton } from '@/components/InstallAppButton';
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -243,6 +246,36 @@ export default function SettingsPage() {
               </div>
               <ChevronRight className="w-4 h-4 text-bvc-secondary" />
             </button>
+          </div>
+        </div>
+
+        {/* PWA App Installation Section */}
+        <div className="space-y-1.5">
+          <h4 className="text-xs font-bold text-bvc-secondary px-1 uppercase tracking-wider flex items-center space-x-1.5">
+            <Smartphone className="w-3.5 h-3.5 text-bvc-red" />
+            <span>Install App</span>
+          </h4>
+
+          <div className="bg-white rounded-3xl border border-cream-300 p-5 shadow-card space-y-3.5">
+            <div className="flex items-center space-x-3.5">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-bvc-red to-[#FFC49B] p-0.5 shadow-sm shrink-0 flex items-center justify-center">
+                <img
+                  src="/icon.svg"
+                  alt="BVC Trip App Icon"
+                  className="w-full h-full rounded-[14px] object-cover"
+                />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h4 className="text-sm font-extrabold text-bvc-text truncate">
+                  BVC Trip Mobile App
+                </h4>
+                <p className="text-xs font-medium text-bvc-secondary mt-0.5 leading-snug">
+                  Install on your phone for quick 1-tap launch, offline viewing & full-screen view.
+                </p>
+              </div>
+            </div>
+
+            <InstallAppButton variant="card" />
           </div>
         </div>
 

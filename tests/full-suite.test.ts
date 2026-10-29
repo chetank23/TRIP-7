@@ -357,7 +357,29 @@ async function runTestSuite() {
   assert(totalPaidByChetan >= 1800, 'Chetan K spending calculation confirmed');
   console.log('  ✔ 6-Member split calculation & spending aggregation verified.\n');
 
-  console.log('🎉 ALL TESTS PASSED! NAVBAR CONTRACT, AUTO-SYNC, ORGANIZER PRIVILEGES, 6-MEMBER SPLIT & MEMBER SPENDING VERIFIED!\n');
+  // Test K: PWA Web App Manifest & App Installation Contract
+  console.log('Test K: PWA Web App Manifest & App Installation Assets');
+  const fs = await import('fs');
+  const path = await import('path');
+
+  assert(fs.existsSync(path.join(process.cwd(), 'public', 'manifest.json')), 'manifest.json must exist');
+  const manifestRaw = fs.readFileSync(path.join(process.cwd(), 'public', 'manifest.json'), 'utf8');
+  const manifest = JSON.parse(manifestRaw);
+  assert.strictEqual(manifest.display, 'standalone', 'PWA display must be standalone');
+  assert.strictEqual(manifest.short_name, 'BVC Trip', 'PWA short_name must be BVC Trip');
+  assert(Array.isArray(manifest.icons) && manifest.icons.length >= 2, 'Manifest must contain icons');
+
+  assert(fs.existsSync(path.join(process.cwd(), 'public', 'icon.svg')), 'icon.svg must exist');
+  assert(fs.existsSync(path.join(process.cwd(), 'public', 'icon-192.png')), 'icon-192.png must exist');
+  assert(fs.existsSync(path.join(process.cwd(), 'public', 'icon-512.png')), 'icon-512.png must exist');
+  assert(fs.existsSync(path.join(process.cwd(), 'public', 'apple-touch-icon.png')), 'apple-touch-icon.png must exist');
+
+  // Check 30s polling configuration in trip-context.tsx
+  const tripContextCode = fs.readFileSync(path.join(process.cwd(), 'src', 'lib', 'trip-context.tsx'), 'utf8');
+  assert(tripContextCode.includes('30000'), 'Trip context polling interval must be configured for 30s (30000ms)');
+  console.log('  ✔ PWA Manifest, app icons (192, 512, SVG) & 30s active polling contract verified.\n');
+
+  console.log('🎉 ALL TESTS PASSED! NAVBAR CONTRACT, AUTO-SYNC, ORGANIZER PRIVILEGES, 6-MEMBER SPLIT, MEMBER SPENDING & PWA APP INSTALLATION VERIFIED!\n');
 }
 
 runTestSuite().catch((err) => {
