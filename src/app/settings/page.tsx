@@ -16,6 +16,10 @@ import {
   Check,
   X,
   Palmtree,
+  ShieldAlert,
+  Trash2,
+  Lock,
+  AlertTriangle,
 } from 'lucide-react';
 
 export default function SettingsPage() {
@@ -30,12 +34,19 @@ export default function SettingsPage() {
     isSyncing,
     openBudgetModal,
     showToast,
+    clearAllData,
+    isOrganizerUser,
   } = useTrip();
 
   const [isEditingName, setIsEditingName] = useState<boolean>(false);
   const [nameInput, setNameInput] = useState<string>(userName || '');
   const [showMembersModal, setShowMembersModal] = useState<boolean>(false);
   const [newMemberName, setNewMemberName] = useState<string>('');
+
+  const [showResetModal, setShowResetModal] = useState<boolean>(false);
+  const [isResetting, setIsResetting] = useState<boolean>(false);
+  const [resetBudgetChoice, setResetBudgetChoice] = useState<boolean>(false);
+  const [wipeHistoryChoice, setWipeHistoryChoice] = useState<boolean>(true);
 
   const currentBudget = state?.budget?.total || 0;
   const isBudgetConfigured = Boolean(state?.budget?.isConfigured);
@@ -85,6 +96,22 @@ export default function SettingsPage() {
       }
     } catch {
       showToast('Error updating group members', 'error');
+    }
+  };
+
+  const handleClearAllData = async () => {
+    setIsResetting(true);
+    try {
+      const ok = await clearAllData({
+        resetBudget: resetBudgetChoice,
+        clearActivities: wipeHistoryChoice,
+        wipeEverything: wipeHistoryChoice,
+      });
+      if (ok) {
+        setShowResetModal(false);
+      }
+    } finally {
+      setIsResetting(false);
     }
   };
 
@@ -335,6 +362,53 @@ export default function SettingsPage() {
           </div>
         </div>
 
+        {/* Organizer Special Access Section */}
+        <div className="space-y-1.5 pt-1">
+          <div className="flex items-center justify-between px-1">
+            <h4 className="text-xs font-bold text-bvc-secondary uppercase tracking-wider flex items-center space-x-1.5">
+              <ShieldAlert className="w-3.5 h-3.5 text-bvc-red" />
+              <span>Organizer Privileges</span>
+            </h4>
+            <span className="text-[10px] font-bold text-amber-800 bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-200">
+              Chetan K Exclusive
+            </span>
+          </div>
+
+          {isOrganizerUser ? (
+            <div className="bg-white rounded-3xl border border-red-200/80 p-5 shadow-card space-y-3">
+              <div className="flex items-start space-x-3">
+                <div className="w-10 h-10 rounded-2xl bg-red-50 text-bvc-red flex items-center justify-center shrink-0 mt-0.5 border border-red-100">
+                  <Trash2 className="w-5 h-5 stroke-[2]" />
+                </div>
+                <div>
+                  <h5 className="text-xs font-bold text-bvc-text">Clear All Trip Data</h5>
+                  <p className="text-[11px] text-bvc-secondary leading-relaxed mt-0.5">
+                    Wipes all recorded expenses, uploaded receipts, and activity history from the cloud store for all 7 members to start the trip fresh.
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowResetModal(true)}
+                className="w-full py-3 rounded-2xl bg-red-600 hover:bg-red-700 active:scale-[0.98] text-white text-xs font-bold transition-all shadow-sm flex items-center justify-center space-x-2"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>Clear All Trip Data (Special Access)</span>
+              </button>
+            </div>
+          ) : (
+            <div className="bg-white rounded-3xl border border-cream-300 p-4 shadow-card flex items-center space-x-3">
+              <div className="w-9 h-9 rounded-xl bg-cream-100 text-bvc-muted flex items-center justify-center shrink-0">
+                <Lock className="w-4 h-4" />
+              </div>
+              <div className="text-xs text-bvc-secondary leading-snug">
+                Data clearing and full reset is restricted to <strong className="text-bvc-text">Chetan K</strong> as the trip organizer.
+              </div>
+            </div>
+          )}
+        </div>
+
         {/* Logout / Switch Member Button */}
         <div className="pt-2">
           <button
@@ -411,6 +485,90 @@ export default function SettingsPage() {
                 Add
               </button>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Organizer Clear All Data Confirmation Modal */}
+      {showResetModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="fixed inset-0 bg-bvc-text/50 backdrop-blur-sm transition-opacity"
+            onClick={() => !isResetting && setShowResetModal(false)}
+          />
+
+          <div className="relative w-full max-w-sm bg-cream-50 rounded-3xl p-6 shadow-floating border border-cream-300 z-10 animate-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center space-x-2">
+                <div className="w-8 h-8 rounded-xl bg-red-100 text-bvc-red flex items-center justify-center">
+                  <AlertTriangle className="w-4 h-4 stroke-[2.2]" />
+                </div>
+                <h3 className="text-base font-extrabold text-bvc-text">Clear All Trip Data?</h3>
+              </div>
+              <button
+                type="button"
+                disabled={isResetting}
+                onClick={() => setShowResetModal(false)}
+                className="w-8 h-8 rounded-full bg-cream-200 flex items-center justify-center text-bvc-secondary hover:text-bvc-text disabled:opacity-50"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <p className="text-xs text-bvc-secondary leading-relaxed mb-4">
+              You are logged in as <strong className="text-bvc-text font-bold">Chetan K</strong>. This special organizer action permanently clears shared data from the Vercel Blob store for all 7 members.
+            </p>
+
+            <div className="bg-white rounded-2xl p-3.5 border border-cream-300 space-y-2.5 mb-5 text-xs text-bvc-text font-medium">
+              <label className="flex items-center space-x-2.5 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={wipeHistoryChoice}
+                  onChange={(e) => setWipeHistoryChoice(e.target.checked)}
+                  className="rounded border-cream-300 text-bvc-red focus:ring-bvc-red w-4 h-4"
+                />
+                <span>Wipe all expenses & receipt files</span>
+              </label>
+
+              <label className="flex items-center space-x-2.5 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={resetBudgetChoice}
+                  onChange={(e) => setResetBudgetChoice(e.target.checked)}
+                  className="rounded border-cream-300 text-bvc-red focus:ring-bvc-red w-4 h-4"
+                />
+                <span>Also reset shared budget back to ₹0</span>
+              </label>
+            </div>
+
+            <div className="flex space-x-2">
+              <button
+                type="button"
+                disabled={isResetting}
+                onClick={() => setShowResetModal(false)}
+                className="flex-1 py-3 rounded-2xl bg-cream-200 hover:bg-cream-300 text-bvc-text text-xs font-bold transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isResetting}
+                onClick={handleClearAllData}
+                className="flex-1 py-3 rounded-2xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold transition-all disabled:opacity-50 flex items-center justify-center space-x-1.5 shadow-sm"
+              >
+                {isResetting ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    <span>Clearing...</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Yes, Wipe Data</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -17,7 +17,7 @@ export const DEFAULT_MEMBERS = [
 ];
 
 export const OLD_TO_NEW_MEMBERS: Record<string, string> = {
-  'Chetan': 'Chetan K',
+  'Chetan': 'Chetan ',
   'Rahul': 'Adithi',
   'Priya': 'Harshitha',
   'Aakash': 'Dharma',
@@ -30,6 +30,9 @@ function migrateMemberName(name?: string): string {
   if (!name) return 'Chetan K';
   return OLD_TO_NEW_MEMBERS[name] || name;
 }
+
+import { isOrganizer } from './auth';
+export { isOrganizer };
 
 export const INITIAL_STATE: TripState = {
   version: 1,
@@ -501,7 +504,7 @@ export async function updateState(
   writeQueue = (async () => {
     try {
       await prevLock;
-    } catch {}
+    } catch { }
     return lockPromise;
   })();
 
@@ -619,5 +622,5 @@ export async function deleteDocumentFile(fileUrl: string): Promise<void> {
     if (match) {
       await fs.unlink(path.join(docsDir, match));
     }
-  } catch {}
+  } catch { }
 }

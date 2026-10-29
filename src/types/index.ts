@@ -21,7 +21,8 @@ export type ActivityAction =
   | 'budget_updated'
   | 'document_uploaded'
   | 'document_updated'
-  | 'document_deleted';
+  | 'document_deleted'
+  | 'trip_reset';
 
 export interface Expense {
   id: string;

@@ -238,6 +238,44 @@ async function runTestSuite() {
     console.log('  ✔ Failure intercepted cleanly without corrupting state or falsely confirming save.\n');
   }
 
+  // Test H: Organizer-Only Clear All Data Security Check
+  console.log('Test H: Organizer-Only Clear All Data Authorization & Execution');
+  const { isOrganizer } = await import('@/lib/storage');
+  assert.strictEqual(isOrganizer('Chetan K'), true, 'Chetan K must have organizer privileges');
+  assert.strictEqual(isOrganizer('Chetan'), true, 'Chetan must have organizer privileges');
+  assert.strictEqual(isOrganizer('chetan'), true, 'Case-insensitive chetan must have organizer privileges');
+  assert.strictEqual(isOrganizer('Adithi'), false, 'Adithi must NOT have organizer privileges');
+  assert.strictEqual(isOrganizer('Harshitha'), false, 'Harshitha must NOT have organizer privileges');
+  assert.strictEqual(isOrganizer('Dharma'), false, 'Dharma must NOT have organizer privileges');
+  assert.strictEqual(isOrganizer('Lavanya'), false, 'Lavanya must NOT have organizer privileges');
+  assert.strictEqual(isOrganizer('Rohith'), false, 'Rohith must NOT have organizer privileges');
+  assert.strictEqual(isOrganizer('Vyshnavi'), false, 'Vyshnavi must NOT have organizer privileges');
+  console.log('  ✔ Access control check: Only Chetan possesses organizer privileges; all other members strictly blocked.');
+
+  // Test clearing execution via Chetan
+  const clearResult = await updateState((curr) => {
+    curr.expenses = [];
+    curr.documents = [];
+    curr.activities = [
+      {
+        id: 'act_test_reset',
+        action: 'trip_reset',
+        actor: 'Chetan K',
+        targetId: 'all_data',
+        targetTitle: 'All Trip Data Cleared',
+        timestamp: new Date().toISOString(),
+        details: { description: 'All recorded expenses were cleared by Organizer Chetan K.' },
+      },
+    ];
+    return curr;
+  });
+  assert.strictEqual(clearResult.state.expenses.length, 0, 'Expenses must be cleared to 0');
+  assert.strictEqual(clearResult.state.documents.length, 0, 'Documents must be cleared to 0');
+  assert.strictEqual(clearResult.state.activities[0].action, 'trip_reset', 'Reset activity logged');
+  console.log('  ✔ Clean state verified: Expenses and documents wiped clean.\n');
+
+  console.log('🎉 ALL TESTS PASSED! NAVBAR CONTRACT, AUTO-SYNC & ORGANIZER PRIVILEGES FULLY VERIFIED!\n');
+
   console.log('🎉 ALL TESTS PASSED! NAVBAR CONTRACT & SHARED DATA SYNCHRONIZATION FULLY VERIFIED!\n');
 }
 

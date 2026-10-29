@@ -10,6 +10,7 @@ import {
   DocumentCategory,
   ExpenseCategory,
 } from '@/types';
+import { isOrganizer } from '@/lib/auth';
 
 interface ToastState {
   id: string;
@@ -69,6 +70,8 @@ interface TripContextType {
   uploadDocument: (file: File, title: string, category: DocumentCategory) => Promise<boolean>;
   updateDocumentMetadata: (id: string, title: string, category: DocumentCategory) => Promise<boolean>;
   deleteDocument: (id: string) => Promise<boolean>;
+  clearAllData: (options?: { resetBudget?: boolean; clearActivities?: boolean; wipeEverything?: boolean }) => Promise<boolean>;
+  isOrganizerUser: boolean;
   
   // Toast notifications
   toast: ToastState | null;
@@ -583,6 +586,51 @@ export function TripProvider({ children }: { children: React.ReactNode }) {
     [state, userName, showToast]
   );
 
+  const isOrganizerUser = useMemo(() => isOrganizer(userName), [userName]);
+
+  const clearAllData = useCallback(
+    async (options?: {
+      resetBudget?: boolean;
+      clearActivities?: boolean;
+      wipeEverything?: boolean;
+    }): Promise<boolean> => {
+      if (!state) return false;
+
+      try {
+        const res = await fetch('/api/state', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'CLEAR_ALL_DATA',
+            payload: options || {},
+            expectedVersion: state.version,
+            actor: userName || 'Member',
+          }),
+        });
+
+        const json = await res.json();
+        if (res.status === 403) {
+          showToast('Access Denied: Only Chetan K has special administrative privileges to clear all trip data.', 'error');
+          return false;
+        }
+
+        if (!res.ok || !json.success) {
+          throw new Error(json.error || 'Failed to clear trip data');
+        }
+
+        lastVersionRef.current = json.data.version;
+        setState(json.data);
+        showToast('All trip data cleared successfully by Chetan K.', 'success');
+        return true;
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : 'Error clearing trip data';
+        showToast(msg, 'error');
+        return false;
+      }
+    },
+    [state, userName, showToast]
+  );
+
   const value = {
     userName,
     isUserLoaded,
@@ -617,6 +665,8 @@ export function TripProvider({ children }: { children: React.ReactNode }) {
     uploadDocument,
     updateDocumentMetadata,
     deleteDocument,
+    clearAllData,
+    isOrganizerUser,
     toast,
     showToast,
   };

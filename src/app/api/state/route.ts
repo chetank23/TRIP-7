@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { readState, updateState, getStorageStatus, deleteDocumentFile } from '@/lib/storage';
+import { readState, updateState, getStorageStatus, deleteDocumentFile, isOrganizer } from '@/lib/storage';
 import { Expense, TripBudget, ActivityEvent, DocumentCategory } from '@/types';
 
 export const dynamic = 'force-dynamic';
@@ -49,6 +49,18 @@ export async function POST(req: NextRequest) {
 
     if (!action) {
       return NextResponse.json({ success: false, error: 'Action type is required' }, { status: 400 });
+    }
+
+    if (action === 'CLEAR_ALL_DATA') {
+      if (!isOrganizer(actor)) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'Access denied: Only Chetan K has special administrative privileges to clear all trip data.',
+          },
+          { status: 403, headers: NO_CACHE_HEADERS }
+        );
+      }
     }
 
     const result = await updateState((current) => {
@@ -287,6 +299,63 @@ export async function POST(req: NextRequest) {
           if (Array.isArray(members) && members.length > 0) {
             updated.members = Array.from(new Set(members.map((m) => m.trim()).filter(Boolean)));
           }
+          break;
+        }
+
+        case 'CLEAR_ALL_DATA': {
+          if (!isOrganizer(actor)) {
+            throw new Error('Access denied: Only Chetan K has special administrative privileges to clear all trip data.');
+          }
+
+          const {
+            resetBudget = false,
+            clearActivities = true,
+            wipeEverything = false,
+          } = (payload || {}) as {
+            resetBudget?: boolean;
+            clearActivities?: boolean;
+            wipeEverything?: boolean;
+          };
+
+          // Clean up any uploaded document files in blob storage
+          for (const doc of updated.documents) {
+            if (doc.fileUrl) {
+              deleteDocumentFile(doc.fileUrl).catch((err) => {
+                console.error('Failed to clean up blob file on clear all:', err);
+              });
+            }
+          }
+
+          updated.expenses = [];
+          updated.documents = [];
+
+          if (resetBudget) {
+            updated.budget = {
+              total: 0,
+              isConfigured: false,
+              currency: 'INR',
+              lastUpdatedBy: actor,
+              lastUpdatedAt: now,
+            };
+          }
+
+          if (wipeEverything) {
+            updated.activities = [];
+          } else if (clearActivities) {
+            const resetEvent: ActivityEvent = {
+              id: `act_${Date.now()}_reset`,
+              action: 'trip_reset',
+              actor: 'Chetan K',
+              targetId: 'all_data',
+              targetTitle: 'All Trip Data Cleared',
+              timestamp: now,
+              details: {
+                description: 'All recorded expenses and receipts were cleared by Organizer Chetan K.',
+              },
+            };
+            updated.activities = [resetEvent];
+          }
+
           break;
         }
 

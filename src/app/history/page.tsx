@@ -71,6 +71,13 @@ function getActionMeta(action: ActivityAction) {
         iconBg: '#FEF7EE',
         iconColor: '#EFA43A',
       };
+    case 'trip_reset':
+      return {
+        label: 'cleared and reset all trip data (Organizer)',
+        icon: Trash2,
+        iconBg: '#FDF2F2',
+        iconColor: '#D94444',
+      };
     default:
       return {
         label: 'performed an operation',
