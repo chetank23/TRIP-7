@@ -398,9 +398,14 @@ async function runTestSuite() {
   const swCode = fs.readFileSync(path.join(process.cwd(), 'public', 'sw.js'), 'utf8');
   assert(swCode.includes('bvc-trip-v1'), 'sw.js must contain cache name');
 
-  console.log('  ✔ Chetan passcode 0923 verification, organizer checks & sw.js verified.\n');
+  // Verify Vyshnavi tribute in MemberSpendingSummary (₹ ∞ and no 0%)
+  const memberSummaryCode = fs.readFileSync(path.join(process.cwd(), 'src', 'components', 'MemberSpendingSummary.tsx'), 'utf8');
+  assert(memberSummaryCode.includes('₹ ∞'), 'Vyshnavi amount must display ₹ ∞ (infinity)');
+  assert(memberSummaryCode.includes('Miss you Vyshh!'), 'Vyshnavi tribute tagline must be present');
 
-  console.log('🎉 ALL TESTS PASSED! NAVBAR CONTRACT, AUTO-SYNC, ORGANIZER PRIVILEGES, 6-MEMBER SPLIT, MEMBER SPENDING, PWA APP INSTALLATION & CHETAN PASSCODE VERIFIED!\n');
+  console.log('  ✔ Chetan passcode 0923 verification, organizer checks, sw.js & Vyshnavi ₹ ∞ verified.\n');
+
+  console.log('🎉 ALL TESTS PASSED! NAVBAR CONTRACT, AUTO-SYNC, ORGANIZER PRIVILEGES, 6-MEMBER SPLIT, MEMBER SPENDING, PWA APP INSTALLATION, CHETAN PASSCODE & VYSHNAVI INFINITY VERIFIED!\n');
 }
 
 runTestSuite().catch((err) => {

@@ -126,40 +126,56 @@ export function MemberSpendingSummary() {
 
                 {/* Right: Total Amount & Percentage */}
                 <div className="text-right shrink-0">
-                  <span className="text-xs font-extrabold text-bvc-text tabular-nums block">
-                    ₹ {member.totalPaid.toLocaleString('en-IN')}
-                  </span>
-                  <div className="flex items-center justify-end space-x-1">
-                    <span className="text-[10px] font-semibold text-bvc-secondary tabular-nums">
-                      {member.percentage}%
-                    </span>
-                    {totalSpent > 0 && !isVyshnavi && (
-                      <span
-                        className={`text-[9px] font-bold ${balance >= 0 ? 'text-emerald-700' : 'text-bvc-muted'
-                          }`}
-                      >
-                        {balance > 0 ? `(+₹${balance.toLocaleString('en-IN')})` : ''}
+                  {isVyshnavi ? (
+                    <div>
+                      <span className="text-sm font-black text-pink-600 block leading-tight tracking-wide">
+                        ₹ ∞
                       </span>
-                    )}
-                    {isVyshnavi && (
-                      <span className="text-[9px] font-bold text-pink-500">
-                        (Miss you!)
+                      <span className="text-[10px] font-bold text-pink-500 block mt-0.5">
+                        (Miss you Vyshh!)
                       </span>
-                    )}
-                  </div>
+                    </div>
+                  ) : (
+                    <div>
+                      <span className="text-xs font-extrabold text-bvc-text tabular-nums block">
+                        ₹ {member.totalPaid.toLocaleString('en-IN')}
+                      </span>
+                      <div className="flex items-center justify-end space-x-1">
+                        <span className="text-[10px] font-semibold text-bvc-secondary tabular-nums">
+                          {member.percentage}%
+                        </span>
+                        {totalSpent > 0 && (
+                          <span
+                            className={`text-[9px] font-bold ${
+                              balance >= 0 ? 'text-emerald-700' : 'text-bvc-muted'
+                            }`}
+                          >
+                            {balance > 0 ? `(+₹${balance.toLocaleString('en-IN')})` : ''}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
               {/* Relative Progress Bar */}
               <div className="w-full h-1.5 bg-cream-200 rounded-full overflow-hidden">
                 <div
-                  className={`h-full rounded-full transition-all duration-500 ${isTopPayer
-                    ? 'bg-gradient-to-r from-bvc-deepRed to-bvc-red'
-                    : member.totalPaid > 0
-                      ? 'bg-bvc-red/80'
-                      : 'bg-transparent'
-                    }`}
-                  style={{ width: `${Math.max(member.percentage, member.totalPaid > 0 ? 5 : 0)}%` }}
+                  className={`h-full rounded-full transition-all duration-500 ${
+                    isVyshnavi
+                      ? 'bg-gradient-to-r from-pink-300 via-rose-300 to-pink-400'
+                      : isTopPayer
+                        ? 'bg-gradient-to-r from-bvc-deepRed to-bvc-red'
+                        : member.totalPaid > 0
+                          ? 'bg-bvc-red/80'
+                          : 'bg-transparent'
+                  }`}
+                  style={{
+                    width: isVyshnavi
+                      ? '100%'
+                      : `${Math.max(member.percentage, member.totalPaid > 0 ? 5 : 0)}%`,
+                  }}
                 />
               </div>
             </div>
