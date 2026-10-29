@@ -160,52 +160,20 @@ export class StorageOperationError extends Error {
 // In-process lock to serialize concurrent server requests
 let writeQueue: Promise<unknown> = Promise.resolve();
 
-export function getCleanToken(): string {
-  const token = process.env.BLOB_READ_WRITE_TOKEN || '';
-  return token.trim().replace(/^["']|["']$/g, '');
-}
-
-export function isCloudBlob(): boolean {
-  const mode = process.env.BLOB_STORAGE_MODE || process.env.BLOB_MODE;
-  if (mode === 'local') return false;
-
-  const token = getCleanToken();
-  if (!token || !token.startsWith('vercel_blob_rw_') || token.includes('local_test')) {
-    return false;
-  }
-
-  // Deployed on Vercel always uses cloud blob
-  if (process.env.VERCEL === '1') return true;
-
-  // Explicit cloud mode requested
-  if (mode === 'cloud') return true;
-
-  return true;
-}
-
-export function isLocalBlob(): boolean {
-  return !isCloudBlob();
-}
-
 export function hasVercelBlobToken(): boolean {
-  // If cloud mode is active, verify clean token
-  if (isCloudBlob()) return true;
-
-  // If deployed in production on Vercel without cloud token, fail gracefully
-  if (process.env.VERCEL === '1') return false;
-
-  // In local development / testing, Local Blob Environment is fully available
-  return true;
+  const token = process.env.BLOB_READ_WRITE_TOKEN;
+  return Boolean(token && token.trim().length > 0);
 }
 
 export function isCloudBlobToken(): boolean {
-  return isCloudBlob();
+  const token = process.env.BLOB_READ_WRITE_TOKEN;
+  return Boolean(token && token.startsWith('vercel_blob_rw_'));
 }
 
-function requireBlobConfigured(): void {
+function requireBlobToken(): void {
   if (!hasVercelBlobToken()) {
     throw new StorageConfigurationError(
-      'BLOB_READ_WRITE_TOKEN is missing on Vercel deployment. Please link a Vercel Blob store in project settings.'
+      'BLOB_READ_WRITE_TOKEN is not configured in the environment. Please configure it in .env.local or your Vercel project.'
     );
   }
 }
@@ -217,28 +185,6 @@ function getLocalBlobPath(pathname: string): string {
 
 async function ensureLocalBlobDir(filePath: string): Promise<void> {
   await fs.mkdir(path.dirname(filePath), { recursive: true });
-}
-
-function sanitizeState(raw: unknown): TripState {
-  if (!raw || typeof raw !== 'object') {
-    return { ...INITIAL_STATE };
-  }
-  const obj = raw as Partial<TripState>;
-  return {
-    version: typeof obj.version === 'number' ? obj.version : 1,
-    budget: {
-      total: typeof obj.budget?.total === 'number' ? obj.budget.total : INITIAL_STATE.budget.total,
-      isConfigured: typeof obj.budget?.isConfigured === 'boolean' ? obj.budget.isConfigured : true,
-      currency: obj.budget?.currency || 'INR',
-      lastUpdatedBy: obj.budget?.lastUpdatedBy || 'Chetan',
-      lastUpdatedAt: obj.budget?.lastUpdatedAt || new Date().toISOString(),
-    },
-    expenses: Array.isArray(obj.expenses) ? obj.expenses : [...INITIAL_STATE.expenses],
-    documents: Array.isArray(obj.documents) ? obj.documents : [...INITIAL_STATE.documents],
-    activities: Array.isArray(obj.activities) ? obj.activities : [...INITIAL_STATE.activities],
-    members: Array.isArray(obj.members) && obj.members.length > 0 ? obj.members : [...INITIAL_STATE.members],
-    lastSyncedAt: obj.lastSyncedAt || new Date().toISOString(),
-  };
 }
 
 /**
@@ -268,13 +214,12 @@ export async function verifyBlobHealth(): Promise<{
     };
   }
 
-  const isCloud = isCloudBlob();
+  const isCloud = isCloudBlobToken();
 
   if (isCloud) {
-    const cleanToken = getCleanToken();
     // Cloud Vercel Blob Verification
     try {
-      await cloudList({ limit: 1, token: cleanToken });
+      await cloudList({ limit: 1 });
     } catch (err: unknown) {
       const errorMsg = err instanceof Error ? err.message : String(err);
       const isAuth =
@@ -305,7 +250,6 @@ export async function verifyBlobHealth(): Promise<{
         addRandomSuffix: false,
         allowOverwrite: true,
         contentType: 'application/json',
-        token: cleanToken,
       });
       if (putRes.url) {
         const fetchRes = await fetch(putRes.url, { cache: 'no-store' });
@@ -313,7 +257,7 @@ export async function verifyBlobHealth(): Promise<{
           const json = await fetchRes.json();
           if (json.ping === 'pong') roundTripVerified = true;
         }
-        await cloudDel(putRes.url, { token: cleanToken });
+        await cloudDel(putRes.url);
       }
     } catch (writeErr: unknown) {
       const msg = writeErr instanceof Error ? writeErr.message : String(writeErr);
@@ -343,7 +287,7 @@ export async function verifyBlobHealth(): Promise<{
 
   // Local Vercel Blob Environment Verification
   try {
-    const testFile = getLocalBlobPath(`test/health-${Date.now()}-${Math.random().toString(36).substring(2, 6)}.json`);
+    const testFile = getLocalBlobPath(`test/health-${Date.now()}.json`);
     await ensureLocalBlobDir(testFile);
     await fs.writeFile(testFile, JSON.stringify({ ping: 'pong' }), 'utf-8');
     const readBack = await fs.readFile(testFile, 'utf-8');
@@ -355,7 +299,7 @@ export async function verifyBlobHealth(): Promise<{
       ok: true,
       status: 'Connected to Vercel Blob',
       code: 'CONNECTED',
-      message: 'Connected to Vercel Blob Local Environment (.local-blob/ directory)',
+      message: 'Connected to Vercel Blob Local Environment (fully functional for testing)',
       hasToken: true,
       stateInitialized: true,
       roundTripVerified,
@@ -396,12 +340,11 @@ export async function getStorageStatus(): Promise<StorageStatus> {
  * Reads shared state from Vercel Blob (Cloud or Local Environment).
  */
 export async function readState(): Promise<TripState> {
-  requireBlobConfigured();
+  requireBlobToken();
 
-  if (isCloudBlob()) {
-    const cleanToken = getCleanToken();
+  if (isCloudBlobToken()) {
     try {
-      const { blobs } = await cloudList({ prefix: STATE_BLOB_PATHNAME, limit: 1, token: cleanToken });
+      const { blobs } = await cloudList({ prefix: STATE_BLOB_PATHNAME, limit: 1 });
       if (blobs.length > 0 && blobs[0].downloadUrl) {
         const fetchUrl = `${blobs[0].downloadUrl}?t=${Date.now()}`;
         const response = await fetch(fetchUrl, {
@@ -409,18 +352,7 @@ export async function readState(): Promise<TripState> {
           headers: { 'Cache-Control': 'no-cache, no-store' },
         });
         if (response.ok) {
-          const raw = await response.json();
-          const cleanState = sanitizeState(raw);
-          if (!Array.isArray(raw?.expenses) || !raw?.budget) {
-            await cloudPut(STATE_BLOB_PATHNAME, JSON.stringify(cleanState, null, 2), {
-              access: 'public',
-              addRandomSuffix: false,
-              allowOverwrite: true,
-              contentType: 'application/json',
-              token: cleanToken,
-            });
-          }
-          return cleanState;
+          return (await response.json()) as TripState;
         }
       }
 
@@ -430,7 +362,6 @@ export async function readState(): Promise<TripState> {
         addRandomSuffix: false,
         allowOverwrite: true,
         contentType: 'application/json',
-        token: cleanToken,
       });
       return INITIAL_STATE;
     } catch (err: unknown) {
@@ -444,10 +375,9 @@ export async function readState(): Promise<TripState> {
   try {
     await ensureLocalBlobDir(stateFilePath);
     const content = await fs.readFile(stateFilePath, 'utf-8');
-    const parsed = JSON.parse(content);
-    return sanitizeState(parsed);
+    return JSON.parse(content) as TripState;
   } catch (err: unknown) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT' || err instanceof SyntaxError) {
+    if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
       await ensureLocalBlobDir(stateFilePath);
       await fs.writeFile(stateFilePath, JSON.stringify(INITIAL_STATE, null, 2), 'utf-8');
       return INITIAL_STATE;
@@ -464,7 +394,7 @@ export async function updateState(
   mutator: (current: TripState) => TripState | Promise<TripState>,
   expectedVersion?: number
 ): Promise<{ state: TripState; conflict?: boolean }> {
-  requireBlobConfigured();
+  requireBlobToken();
 
   let resolveCurrent: () => void;
   const lockPromise = new Promise<void>((resolve) => {
@@ -492,14 +422,12 @@ export async function updateState(
       lastSyncedAt: new Date().toISOString(),
     };
 
-    if (isCloudBlob()) {
-      const cleanToken = getCleanToken();
+    if (isCloudBlobToken()) {
       await cloudPut(STATE_BLOB_PATHNAME, JSON.stringify(nextState, null, 2), {
         access: 'public',
         addRandomSuffix: false,
         allowOverwrite: true,
         contentType: 'application/json',
-        token: cleanToken,
       });
       return { state: nextState, conflict: false };
     }
@@ -526,19 +454,17 @@ export async function saveDocumentFile(
   buffer: Buffer,
   mimeType: string
 ): Promise<{ fileUrl: string }> {
-  requireBlobConfigured();
+  requireBlobToken();
 
   const safeFileName = fileName.replace(/[^a-zA-Z0-9.-]/g, '_');
   const pathname = `documents/${fileId}-${safeFileName}`;
 
-  if (isCloudBlob()) {
-    const cleanToken = getCleanToken();
+  if (isCloudBlobToken()) {
     const blob = await cloudPut(pathname, buffer, {
       access: 'public',
       addRandomSuffix: false,
       allowOverwrite: true,
       contentType: mimeType,
-      token: cleanToken,
     });
     return { fileUrl: blob.url };
   }
@@ -576,10 +502,9 @@ export async function getLocalBlobFile(fileId: string): Promise<{ buffer: Buffer
 export async function deleteDocumentFile(fileUrl: string): Promise<void> {
   if (!hasVercelBlobToken()) return;
 
-  if (isCloudBlob() && fileUrl.startsWith('http')) {
+  if (isCloudBlobToken() && fileUrl.startsWith('http')) {
     try {
-      const cleanToken = getCleanToken();
-      await cloudDel(fileUrl, { token: cleanToken });
+      await cloudDel(fileUrl);
     } catch (err) {
       console.warn('Failed to delete cloud blob:', err);
     }
@@ -590,6 +515,7 @@ export async function deleteDocumentFile(fileUrl: string): Promise<void> {
   const docsDir = path.join(LOCAL_BLOB_DIR, 'documents');
   try {
     const files = await fs.readdir(docsDir);
+    // Find file by matching fileUrl or id
     const match = files.find((f) => fileUrl.includes(f));
     if (match) {
       await fs.unlink(path.join(docsDir, match));

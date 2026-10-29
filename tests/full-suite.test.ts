@@ -1,12 +1,7 @@
-// Check command line arguments for explicit mode
-if (process.argv.includes('--local')) {
-  process.env.BLOB_STORAGE_MODE = 'local';
-} else {
-  try {
-    // Load .env.local for standalone test execution
-    process.loadEnvFile('.env.local');
-  } catch {}
-}
+try {
+  // Load .env.local for standalone test execution
+  process.loadEnvFile('.env.local');
+} catch {}
 
 import assert from 'assert';
 import {
@@ -28,8 +23,8 @@ async function runTestSuite() {
   const tokenPresent = hasVercelBlobToken();
   const isCloud = isCloudBlobToken();
   console.log(`[Diagnostic] Storage Mode: ${isCloud ? 'Vercel Cloud Blob' : 'Vercel Blob Local Environment'}`);
-  assert.strictEqual(tokenPresent, true, 'Storage engine must be configured and ready');
-  console.log(`  ✔ Storage engine operational in ${isCloud ? 'Cloud' : 'Local Environment'} mode\n`);
+  assert.strictEqual(tokenPresent, true, 'BLOB_READ_WRITE_TOKEN must be configured in .env.local');
+  console.log('  ✔ BLOB_READ_WRITE_TOKEN verified and loaded from .env.local\n');
 
   // Test 1: Storage Health Diagnostic
   console.log('Test 1: Storage Health Diagnostic & Isolated Round-Trip Test');
