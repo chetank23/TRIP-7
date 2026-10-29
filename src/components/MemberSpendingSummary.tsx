@@ -68,6 +68,7 @@ export function MemberSpendingSummary() {
         {memberSpending.map((member, idx) => {
           const meta = getProfileMeta(member.name);
           const isTopPayer = idx === 0 && member.totalPaid > 0;
+          const isVyshnavi = member.name.toLowerCase().includes('vysh');
           const balance = member.totalPaid - equalShareFor6;
 
           return (
@@ -98,7 +99,7 @@ export function MemberSpendingSummary() {
                   </div>
 
                   <div className="min-w-0">
-                    <div className="flex items-center space-x-1.5">
+                    <div className="flex items-center space-x-1.5 flex-wrap gap-y-0.5">
                       <span className="text-xs font-bold text-bvc-text truncate">
                         {member.name}
                       </span>
@@ -107,9 +108,16 @@ export function MemberSpendingSummary() {
                           Top Payer
                         </span>
                       )}
+                      {isVyshnavi && (
+                        <span className="text-[9px] font-extrabold text-pink-700 bg-pink-50 px-1.5 py-0.2 rounded-full border border-pink-200 shrink-0">
+                          WE MISS YOU VYSHH ❤️
+                        </span>
+                      )}
                     </div>
                     <span className="text-[10px] text-bvc-secondary font-medium block">
-                      {member.expenseCount === 0
+                      {isVyshnavi
+                        ? 'Not on trip · Always in our thoughts 💖'
+                        : member.expenseCount === 0
                         ? 'No expenses paid'
                         : `${member.expenseCount} payment${member.expenseCount === 1 ? '' : 's'}`}
                     </span>
@@ -125,13 +133,18 @@ export function MemberSpendingSummary() {
                     <span className="text-[10px] font-semibold text-bvc-secondary tabular-nums">
                       {member.percentage}%
                     </span>
-                    {totalSpent > 0 && (
+                    {totalSpent > 0 && !isVyshnavi && (
                       <span
                         className={`text-[9px] font-bold ${
                           balance >= 0 ? 'text-emerald-700' : 'text-bvc-muted'
                         }`}
                       >
                         {balance > 0 ? `(+₹${balance.toLocaleString('en-IN')})` : ''}
+                      </span>
+                    )}
+                    {isVyshnavi && (
+                      <span className="text-[9px] font-bold text-pink-500">
+                        (Miss you!)
                       </span>
                     )}
                   </div>
@@ -158,3 +171,4 @@ export function MemberSpendingSummary() {
     </div>
   );
 }
+

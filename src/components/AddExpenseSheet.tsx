@@ -438,7 +438,7 @@ export function AddExpenseSheet() {
                             : 'bg-white text-bvc-secondary border-cream-300 hover:bg-cream-50'
                         }`}
                       >
-                        {m} {isIncluded ? '✓' : '+'}
+                        {m} {m === 'Vyshnavi' ? '(Miss you Vyshh!)' : isIncluded ? '✓' : '+'}
                       </button>
                     );
                   })}

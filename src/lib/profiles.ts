@@ -9,6 +9,8 @@ export interface FriendProfile {
   photoUrl: string;
   message: string;
   initials: string;
+  tagline?: string;
+  isAbsent?: boolean;
 }
 
 export const FRIEND_PROFILES: FriendProfile[] = [
@@ -49,10 +51,12 @@ export const FRIEND_PROFILES: FriendProfile[] = [
   },
   {
     name: 'Vyshnavi',
-    aliases: ['vyshnavi', 'vaishnavi', 'vysh'],
+    aliases: ['vyshnavi', 'vaishnavi', 'vysh', 'vyshh'],
     photoUrl: 'https://res.cloudinary.com/dccnccjgr/image/upload/v1793307425/VYSH_pghbo8.png',
-    message: 'There you are, Vyshnavi! ✨',
+    message: 'We miss you Vyshh! 🥺❤️',
+    tagline: 'WE MISS YOU VYSHH',
     initials: 'VY',
+    isAbsent: true,
   },
   {
     name: 'Lavanya',

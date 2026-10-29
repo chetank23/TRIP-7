@@ -302,7 +302,7 @@ async function runTestSuite() {
     },
     'Vyshnavi': {
       url: 'https://res.cloudinary.com/dccnccjgr/image/upload/v1793307425/VYSH_pghbo8.png',
-      msg: 'There you are, Vyshnavi! ✨',
+      msg: 'We miss you Vyshh! 🥺❤️',
     },
     'Lavanya': {
       url: 'https://res.cloudinary.com/dccnccjgr/image/upload/v1793307424/LAVANYA_pmkkjk.jpg',

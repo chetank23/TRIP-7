@@ -122,8 +122,8 @@ export function LandingPage() {
             {/* Subtle name badge during automatic slideshow */}
             {!selectedProfile && currentProfile && (
               <div className="absolute bottom-2 inset-x-3 text-center pointer-events-none">
-                <span className="inline-block px-3 py-0.5 rounded-full bg-black/50 backdrop-blur-sm text-[11px] font-bold text-white tracking-wide truncate max-w-full">
-                  {currentProfile.name}
+                <span className="inline-block px-3 py-0.5 rounded-full bg-black/55 backdrop-blur-sm text-[11px] font-bold text-white tracking-wide truncate max-w-full">
+                  {currentProfile.name === 'Vyshnavi' ? 'Vyshnavi · WE MISS YOU VYSHH ❤️' : currentProfile.name}
                 </span>
               </div>
             )}
