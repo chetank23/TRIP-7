@@ -148,19 +148,27 @@ export function TripProvider({ children }: { children: React.ReactNode }) {
 
     try {
       const res = await fetch('/api/state', { cache: 'no-store' });
-      if (!res.ok) {
-        throw new Error(`Failed to load state (${res.status})`);
+      const data = await res.json().catch(() => null);
+
+      if (data?.storage) {
+        setStorageStatus(data.storage);
       }
-      const data = await res.json();
-      if (data.success && data.data) {
+
+      if (!res.ok || !data?.success) {
+        const errorMsg = data?.error || `Storage error (HTTP ${res.status})`;
+        setError(errorMsg);
+        if (!isBackground) {
+          console.warn('Trip storage sync notice:', errorMsg);
+        }
+        return;
+      }
+
+      if (data.data) {
         setState(data.data);
-        if (data.storage) setStorageStatus(data.storage);
         setError(null);
-      } else {
-        throw new Error(data.error || 'Invalid state payload');
       }
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Error syncing state';
+      const msg = err instanceof Error ? err.message : 'Error syncing state with Vercel Blob';
       if (!isBackground) setError(msg);
       console.error('Sync error:', err);
     } finally {
@@ -547,3 +555,4 @@ export function useTrip() {
   }
   return context;
 }
+

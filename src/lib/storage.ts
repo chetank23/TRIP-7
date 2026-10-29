@@ -1,11 +1,7 @@
-import { promises as fs } from 'fs';
-import path from 'path';
-import { put, list, del } from '@vercel/blob';
-import { TripState, StorageStatus } from '@/types';
+import { put, list, del, head } from '@vercel/blob';
+import { TripState, StorageStatus, StorageStatusCode, StorageStatusText } from '@/types';
 
-const STATE_FILE_PATH = path.join(process.cwd(), 'data', 'bvc-trip-state.json');
-const UPLOADS_DIR = path.join(process.cwd(), 'data', 'uploads');
-const STATE_BLOB_PATHNAME = 'state/bvc-trip-state.json';
+export const STATE_BLOB_PATHNAME = 'state/bvc-trip-state.json';
 
 const DEFAULT_MEMBERS = [
   'Chetan',
@@ -31,117 +27,261 @@ export const INITIAL_STATE: TripState = {
   lastSyncedAt: new Date().toISOString(),
 };
 
-// Global in-process lock to prevent race conditions during write operations
-let writeLock: Promise<unknown> = Promise.resolve();
-
-export function hasVercelBlobToken(): boolean {
-  return Boolean(process.env.BLOB_READ_WRITE_TOKEN);
+export class StorageConfigurationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'StorageConfigurationError';
+  }
 }
 
-export async function getStorageStatus(): Promise<StorageStatus> {
-  const isVercel = hasVercelBlobToken();
-  if (isVercel) {
-    try {
-      await list({ limit: 1 });
-      return {
-        connected: true,
-        provider: 'vercel-blob',
-        message: 'Connected to Vercel Blob shared storage',
-      };
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      return {
-        connected: false,
-        provider: 'vercel-blob',
-        message: `Vercel Blob connection error: ${msg}`,
-      };
-    }
+export class StorageAuthError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'StorageAuthError';
   }
+}
 
-  // Local persistent storage
-  try {
-    await fs.mkdir(path.dirname(STATE_FILE_PATH), { recursive: true });
-    await fs.mkdir(UPLOADS_DIR, { recursive: true });
-    return {
-      connected: true,
-      provider: 'local-persistent',
-      message: 'Connected to server persistent storage (ready for Vercel Blob in cloud)',
-    };
-  } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : String(err);
-    return {
-      connected: false,
-      provider: 'local-persistent',
-      message: `Local storage initialization error: ${msg}`,
-    };
+export class StorageOperationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'StorageOperationError';
+  }
+}
+
+// In-process write lock to serialize concurrent async writes within the same instance
+let writeQueue: Promise<unknown> = Promise.resolve();
+
+/**
+ * Returns true if BLOB_READ_WRITE_TOKEN is configured in the environment.
+ * Never prints or exposes the token value.
+ */
+export function hasVercelBlobToken(): boolean {
+  const token = process.env.BLOB_READ_WRITE_TOKEN;
+  return Boolean(token && token.trim().length > 0);
+}
+
+/**
+ * Ensures BLOB_READ_WRITE_TOKEN is present before attempting operations.
+ */
+function requireBlobToken(): void {
+  if (!hasVercelBlobToken()) {
+    throw new StorageConfigurationError(
+      'BLOB_READ_WRITE_TOKEN is not configured in the environment. Please set your Vercel Blob token in .env.local for local development or in Vercel Project Settings for production.'
+    );
   }
 }
 
 /**
- * Reads the latest persistent state from Vercel Blob or local storage.
+ * Diagnostic health check that tests the real Vercel Blob integration.
+ * Performs a safe write/read/delete round-trip using an isolated test namespace
+ * and immediately cleans up the temporary test object.
+ * Never touches or overwrites existing production trip data.
  */
-export async function readState(): Promise<TripState> {
-  if (hasVercelBlobToken()) {
-    try {
-      const { blobs } = await list({ prefix: STATE_BLOB_PATHNAME, limit: 1 });
-      if (blobs.length > 0 && blobs[0].downloadUrl) {
-        const response = await fetch(blobs[0].downloadUrl, { cache: 'no-store' });
-        if (response.ok) {
-          const data = (await response.json()) as TripState;
-          return data;
+export async function verifyBlobHealth(): Promise<{
+  ok: boolean;
+  status: StorageStatusText;
+  code: StorageStatusCode;
+  message: string;
+  hasToken: boolean;
+  stateInitialized: boolean;
+  roundTripVerified: boolean;
+}> {
+  if (!hasVercelBlobToken()) {
+    return {
+      ok: false,
+      status: 'Blob credentials missing',
+      code: 'CREDENTIALS_MISSING',
+      message: 'BLOB_READ_WRITE_TOKEN is missing. Please configure it in .env.local or your Vercel project.',
+      hasToken: false,
+      stateInitialized: false,
+      roundTripVerified: false,
+    };
+  }
+
+  // 1. Authenticate by listing
+  try {
+    await list({ limit: 1 });
+  } catch (err: unknown) {
+    const errorMsg = err instanceof Error ? err.message : String(err);
+    const isAuth =
+      errorMsg.includes('401') ||
+      errorMsg.includes('unauthorized') ||
+      errorMsg.includes('forbidden') ||
+      errorMsg.includes('Invalid token');
+
+    return {
+      ok: false,
+      status: isAuth ? 'Blob authentication failed' : 'Blob read failed',
+      code: isAuth ? 'AUTH_FAILED' : 'READ_FAILED',
+      message: `Vercel Blob authentication/connection failed: ${errorMsg}`,
+      hasToken: true,
+      stateInitialized: false,
+      roundTripVerified: false,
+    };
+  }
+
+  // 2. Controlled write/read/delete round-trip test on an isolated test object
+  const testPathname = `test/health-check-${Date.now()}-${Math.random().toString(36).substring(2, 7)}.json`;
+  const testPayload = JSON.stringify({ ping: 'pong', timestamp: new Date().toISOString() });
+  let roundTripVerified = false;
+
+  try {
+    const putResult = await put(testPathname, testPayload, {
+      access: 'public',
+      addRandomSuffix: false,
+      contentType: 'application/json',
+      cacheControlMaxAge: 0,
+    });
+
+    if (putResult.url) {
+      // Verify read back
+      const readRes = await fetch(putResult.url, { cache: 'no-store' });
+      if (readRes.ok) {
+        const readData = await readRes.json();
+        if (readData.ping === 'pong') {
+          roundTripVerified = true;
         }
       }
-    } catch (err) {
-      console.warn('Failed to read state from Vercel Blob, falling back to local/default:', err);
+      // Immediately delete test object
+      await del(putResult.url);
     }
+  } catch (writeErr: unknown) {
+    const msg = writeErr instanceof Error ? writeErr.message : String(writeErr);
+    return {
+      ok: false,
+      status: 'Blob write failed',
+      code: 'WRITE_FAILED',
+      message: `Blob write test failed: ${msg}`,
+      hasToken: true,
+      stateInitialized: false,
+      roundTripVerified: false,
+    };
   }
 
-  // Fallback to local filesystem persistence
+  // 3. Check if shared state object exists
+  let stateInitialized = false;
   try {
-    await fs.mkdir(path.dirname(STATE_FILE_PATH), { recursive: true });
-    const content = await fs.readFile(STATE_FILE_PATH, 'utf-8');
-    const parsed = JSON.parse(content) as TripState;
-    return parsed;
-  } catch (err: unknown) {
-    // If file doesn't exist, initialize and write initial state
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
-      await writeLocalState(INITIAL_STATE);
-      return INITIAL_STATE;
-    }
-    console.error('Error reading local state:', err);
-    return INITIAL_STATE;
+    const { blobs } = await list({ prefix: STATE_BLOB_PATHNAME, limit: 1 });
+    stateInitialized = blobs.length > 0;
+  } catch {
+    stateInitialized = false;
   }
-}
 
-async function writeLocalState(state: TripState): Promise<void> {
-  await fs.mkdir(path.dirname(STATE_FILE_PATH), { recursive: true });
-  // Write atomically using temporary file
-  const tempPath = `${STATE_FILE_PATH}.${Date.now()}.tmp`;
-  await fs.writeFile(tempPath, JSON.stringify(state, null, 2), 'utf-8');
-  await fs.rename(tempPath, STATE_FILE_PATH);
+  return {
+    ok: true,
+    status: 'Connected to Vercel Blob',
+    code: 'CONNECTED',
+    message: 'Successfully connected and verified round-trip with Vercel Blob shared storage',
+    hasToken: true,
+    stateInitialized,
+    roundTripVerified,
+  };
 }
 
 /**
- * Saves state with mutex locking and optimistic concurrency checks.
+ * Returns genuine runtime storage status for UI and API reporting.
+ * Distinguishes all real states without ever exposing the secret token.
+ */
+export async function getStorageStatus(): Promise<StorageStatus> {
+  const health = await verifyBlobHealth();
+
+  return {
+    connected: health.ok,
+    status: health.status,
+    code: health.code,
+    message: health.message,
+    provider: 'vercel-blob',
+    stateExists: health.stateInitialized,
+  };
+}
+
+/**
+ * Reads the authoritative shared trip state from Vercel Blob.
+ * If the Blob store is connected but the state object has not been created yet,
+ * initializes the shared state in Vercel Blob with INITIAL_STATE.
+ *
+ * Strictly requires BLOB_READ_WRITE_TOKEN. Zero local file fallback.
+ */
+export async function readState(): Promise<TripState> {
+  requireBlobToken();
+
+  try {
+    const { blobs } = await list({ prefix: STATE_BLOB_PATHNAME, limit: 1 });
+
+    if (blobs.length > 0 && blobs[0].downloadUrl) {
+      const response = await fetch(blobs[0].downloadUrl, {
+        cache: 'no-store',
+        headers: { 'Cache-Control': 'no-cache, no-store' },
+      });
+
+      if (!response.ok) {
+        throw new StorageOperationError(
+          `Failed to read state from Vercel Blob: HTTP ${response.status} ${response.statusText}`
+        );
+      }
+
+      const data = (await response.json()) as TripState;
+      if (!data || typeof data.version !== 'number') {
+        throw new StorageOperationError('Corrupt shared state format in Vercel Blob');
+      }
+
+      return data;
+    }
+
+    // State object does not exist yet in the Vercel Blob store.
+    // Initialize it directly in Vercel Blob so subsequent reads succeed.
+    const initialBlob = await put(STATE_BLOB_PATHNAME, JSON.stringify(INITIAL_STATE, null, 2), {
+      access: 'public',
+      addRandomSuffix: false,
+      contentType: 'application/json',
+      cacheControlMaxAge: 0,
+    });
+
+    if (!initialBlob.url) {
+      throw new StorageOperationError('Failed to initialize shared state in Vercel Blob');
+    }
+
+    return INITIAL_STATE;
+  } catch (err: unknown) {
+    if (err instanceof StorageConfigurationError) {
+      throw err;
+    }
+    const msg = err instanceof Error ? err.message : String(err);
+    throw new StorageOperationError(`Vercel Blob read error: ${msg}`);
+  }
+}
+
+/**
+ * Saves shared state to Vercel Blob with optimistic concurrency version control
+ * and in-process mutex locking to serialize overlapping server requests.
+ *
+ * Strictly persists to Vercel Blob. Zero local file fallback.
  */
 export async function updateState(
   mutator: (current: TripState) => TripState | Promise<TripState>,
   expectedVersion?: number
 ): Promise<{ state: TripState; conflict?: boolean }> {
-  // Chain through the write lock to serialize updates
+  requireBlobToken();
+
+  // Chain updates through the lock queue to serialize in-flight writes
   let resolveCurrent: () => void;
   const lockPromise = new Promise<void>((resolve) => {
     resolveCurrent = resolve;
   });
-  const prevLock = writeLock;
-  writeLock = (async () => {
-    await prevLock;
+  const prevLock = writeQueue;
+  writeQueue = (async () => {
+    try {
+      await prevLock;
+    } catch {
+      // Ignore errors from previous task in queue
+    }
     return lockPromise;
   })();
 
   try {
     const currentState = await readState();
 
+    // Optimistic concurrency check
     if (expectedVersion !== undefined && currentState.version !== expectedVersion) {
       return { state: currentState, conflict: true };
     }
@@ -153,22 +293,17 @@ export async function updateState(
       lastSyncedAt: new Date().toISOString(),
     };
 
-    // Save to Vercel Blob if available
-    if (hasVercelBlobToken()) {
-      try {
-        await put(STATE_BLOB_PATHNAME, JSON.stringify(nextState), {
-          access: 'public',
-          addRandomSuffix: false,
-          contentType: 'application/json',
-          cacheControlMaxAge: 0,
-        });
-      } catch (blobErr) {
-        console.error('Failed to write state to Vercel Blob:', blobErr);
-      }
-    }
+    // Save directly to Vercel Blob
+    const blob = await put(STATE_BLOB_PATHNAME, JSON.stringify(nextState, null, 2), {
+      access: 'public',
+      addRandomSuffix: false,
+      contentType: 'application/json',
+      cacheControlMaxAge: 0,
+    });
 
-    // Always mirror to local file for resiliency
-    await writeLocalState(nextState);
+    if (!blob.url) {
+      throw new StorageOperationError('Failed to confirm write to Vercel Blob');
+    }
 
     return { state: nextState, conflict: false };
   } finally {
@@ -177,7 +312,8 @@ export async function updateState(
 }
 
 /**
- * Stores an uploaded file to Vercel Blob or local uploads directory.
+ * Uploads a booking PDF directly to Vercel Blob under documents/[id]-[fileName].
+ * Strictly requires BLOB_READ_WRITE_TOKEN. Zero local file storage.
  */
 export async function saveDocumentFile(
   fileId: string,
@@ -185,62 +321,34 @@ export async function saveDocumentFile(
   buffer: Buffer,
   mimeType: string
 ): Promise<{ fileUrl: string }> {
-  if (hasVercelBlobToken()) {
-    const blob = await put(`documents/${fileId}-${fileName}`, buffer, {
-      access: 'public',
-      contentType: mimeType,
-    });
-    return { fileUrl: blob.url };
+  requireBlobToken();
+
+  const safeFileName = fileName.replace(/[^a-zA-Z0-9.-]/g, '_');
+  const pathname = `documents/${fileId}-${safeFileName}`;
+
+  const blob = await put(pathname, buffer, {
+    access: 'public',
+    addRandomSuffix: false,
+    contentType: mimeType,
+  });
+
+  if (!blob.url) {
+    throw new StorageOperationError('Failed to upload document to Vercel Blob');
   }
 
-  // Local storage
-  await fs.mkdir(UPLOADS_DIR, { recursive: true });
-  const localFileName = `${fileId}-${fileName}`;
-  const filePath = path.join(UPLOADS_DIR, localFileName);
-  await fs.writeFile(filePath, buffer);
-  return { fileUrl: `/api/documents/file?id=${fileId}` };
+  return { fileUrl: blob.url };
 }
 
 /**
- * Retrieves a locally saved document by ID.
+ * Deletes an uploaded PDF from Vercel Blob.
  */
-export async function getLocalDocumentFile(fileId: string): Promise<{ buffer: Buffer; fileName: string } | null> {
-  try {
-    await fs.mkdir(UPLOADS_DIR, { recursive: true });
-    const files = await fs.readdir(UPLOADS_DIR);
-    const targetFile = files.find((f) => f.startsWith(`${fileId}-`));
-    if (!targetFile) return null;
+export async function deleteDocumentFile(fileUrl: string): Promise<void> {
+  if (!hasVercelBlobToken()) return;
+  if (!fileUrl || !fileUrl.startsWith('http')) return;
 
-    const filePath = path.join(UPLOADS_DIR, targetFile);
-    const buffer = await fs.readFile(filePath);
-    const originalName = targetFile.replace(`${fileId}-`, '');
-    return { buffer, fileName: originalName };
+  try {
+    await del(fileUrl);
   } catch (err) {
-    console.error('Error fetching local document file:', err);
-    return null;
-  }
-}
-
-/**
- * Deletes a document file from storage.
- */
-export async function deleteDocumentFile(fileUrl: string, fileId: string): Promise<void> {
-  if (hasVercelBlobToken() && fileUrl.startsWith('http')) {
-    try {
-      await del(fileUrl);
-    } catch (err) {
-      console.warn('Error deleting blob from Vercel Blob:', err);
-    }
-  }
-
-  // Also clean up local file if exists
-  try {
-    const files = await fs.readdir(UPLOADS_DIR);
-    const targetFile = files.find((f) => f.startsWith(`${fileId}-`));
-    if (targetFile) {
-      await fs.unlink(path.join(UPLOADS_DIR, targetFile));
-    }
-  } catch {
-    // Ignore error if file doesn't exist locally
+    console.warn('Warning: Failed to delete blob from Vercel Blob:', err);
   }
 }

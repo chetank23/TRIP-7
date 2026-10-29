@@ -84,10 +84,29 @@ export interface TripState {
   lastSyncedAt: string;
 }
 
+export type StorageStatusCode =
+  | 'CONNECTED'
+  | 'CREDENTIALS_MISSING'
+  | 'AUTH_FAILED'
+  | 'STATE_NOT_INITIALIZED'
+  | 'READ_FAILED'
+  | 'WRITE_FAILED';
+
+export type StorageStatusText =
+  | 'Connected to Vercel Blob'
+  | 'Blob credentials missing'
+  | 'Blob authentication failed'
+  | 'Shared state not initialized'
+  | 'Blob read failed'
+  | 'Blob write failed';
+
 export interface StorageStatus {
   connected: boolean;
-  provider: 'vercel-blob' | 'local-persistent';
+  status: StorageStatusText;
+  code: StorageStatusCode;
   message: string;
+  provider: 'vercel-blob';
+  stateExists?: boolean;
 }
 
 export interface ApiResponse<T = unknown> {
@@ -96,3 +115,4 @@ export interface ApiResponse<T = unknown> {
   error?: string;
   version?: number;
 }
+

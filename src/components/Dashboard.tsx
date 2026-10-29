@@ -8,9 +8,10 @@ import { BudgetSummaryCard } from '@/components/BudgetSummaryCard';
 import { CategorySummaryGrid } from '@/components/CategorySummaryGrid';
 import { RecentTransactions } from '@/components/RecentTransactions';
 import { LoadingSkeleton } from '@/components/LoadingSkeleton';
+import { AlertTriangle, CloudOff } from 'lucide-react';
 
 export function Dashboard() {
-  const { userName, isLoading } = useTrip();
+  const { userName, isLoading, storageStatus } = useTrip();
 
   return (
     <div className="min-h-screen bg-bvc-bg pb-28">
@@ -21,6 +22,22 @@ export function Dashboard() {
           <LoadingSkeleton />
         ) : (
           <>
+            {/* Storage Diagnostic Notice Banner if Blob store is not connected */}
+            {storageStatus && !storageStatus.connected && (
+              <div className="bg-amber-50 border border-amber-200 rounded-2xl p-3.5 flex items-start space-x-3 text-amber-900 shadow-sm animate-in fade-in">
+                <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                <div className="text-xs leading-relaxed flex-1">
+                  <p className="font-bold mb-0.5 text-amber-900">
+                    {storageStatus.status || 'Vercel Blob Storage Notice'}
+                  </p>
+                  <p className="text-amber-800">{storageStatus.message}</p>
+                  <p className="mt-1.5 text-[11px] text-amber-700">
+                    Add <code className="bg-amber-100 text-amber-900 font-mono px-1 py-0.5 rounded">BLOB_READ_WRITE_TOKEN</code> to your <code className="bg-amber-100 text-amber-900 font-mono px-1 py-0.5 rounded">.env.local</code> file to enable live cloud persistence.
+                  </p>
+                </div>
+              </div>
+            )}
+
             {/* Personalized Greeting */}
             <div className="pt-1 pb-1">
               <h2 className="text-2xl font-extrabold text-bvc-text tracking-tight flex items-center space-x-1.5">
@@ -49,3 +66,4 @@ export function Dashboard() {
     </div>
   );
 }
+

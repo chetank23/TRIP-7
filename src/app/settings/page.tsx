@@ -240,22 +240,69 @@ export default function SettingsPage() {
             </button>
 
             {/* Storage Status */}
-            <div className="px-5 py-3.5 flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <div className="w-9 h-9 rounded-xl bg-cream-100 text-bvc-secondary flex items-center justify-center">
-                  <Database className="w-4 h-4" />
+            <div className="px-5 py-3.5">
+              <div className="flex items-center justify-between mb-1.5">
+                <div className="flex items-center space-x-3">
+                  <div className="w-9 h-9 rounded-xl bg-cream-100 text-bvc-secondary flex items-center justify-center">
+                    <Database className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <span className="text-xs font-bold text-bvc-text block">Vercel Blob Storage</span>
+                    <span className="text-[10px] text-bvc-secondary">
+                      {storageStatus?.message || 'Connecting to Vercel Blob store...'}
+                    </span>
+                  </div>
                 </div>
-                <div>
-                  <span className="text-xs font-bold text-bvc-text block">Storage Status</span>
-                  <span className="text-[10px] text-bvc-secondary">
-                    {storageStatus?.message || 'Persistent Shared Storage'}
+
+                <div className="flex items-center space-x-1.5 shrink-0 pl-2">
+                  <span
+                    className={`w-2 h-2 rounded-full ${
+                      storageStatus?.connected
+                        ? 'bg-bvc-success animate-pulse'
+                        : storageStatus?.code === 'STATE_NOT_INITIALIZED'
+                        ? 'bg-amber-500'
+                        : 'bg-bvc-error'
+                    }`}
+                  />
+                  <span
+                    className={`text-xs font-bold ${
+                      storageStatus?.connected
+                        ? 'text-bvc-success'
+                        : storageStatus?.code === 'STATE_NOT_INITIALIZED'
+                        ? 'text-amber-600'
+                        : 'text-bvc-error'
+                    }`}
+                  >
+                    {storageStatus?.status || (storageStatus?.connected ? 'Connected' : 'Disconnected')}
                   </span>
                 </div>
               </div>
 
-              <div className="flex items-center space-x-1.5">
-                <span className="w-2 h-2 rounded-full bg-bvc-success animate-pulse" />
-                <span className="text-xs font-bold text-bvc-success">Connected</span>
+              {/* Diagnostic Trigger Button */}
+              <div className="mt-2 pt-2 border-t border-cream-200 flex items-center justify-between">
+                <span className="text-[10px] text-bvc-muted">
+                  {storageStatus?.connected ? 'Store Verified & Active' : 'Requires BLOB_READ_WRITE_TOKEN in .env.local'}
+                </span>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      const res = await fetch('/api/storage/health');
+                      const json = await res.json();
+                      if (json.ok) {
+                        showToast('Vercel Blob health check verified: Write/read round-trip passed!', 'success');
+                      } else {
+                        showToast(`Storage Status: ${json.status}. ${json.message}`, 'error');
+                      }
+                      refreshState();
+                    } catch {
+                      showToast('Health check failed to execute', 'error');
+                    }
+                  }}
+                  className="text-[11px] font-bold text-bvc-red hover:underline"
+                >
+                  Run Storage Health Check →
+                </button>
               </div>
             </div>
 
@@ -359,3 +406,4 @@ export default function SettingsPage() {
     </div>
   );
 }
+

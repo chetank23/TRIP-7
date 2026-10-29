@@ -6,7 +6,19 @@ export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
-    const [state, status] = await Promise.all([readState(), getStorageStatus()]);
+    const status = await getStorageStatus();
+    if (!status.connected) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: status.message,
+          storage: status,
+        },
+        { status: status.code === 'CREDENTIALS_MISSING' ? 503 : 500 }
+      );
+    }
+
+    const state = await readState();
     return NextResponse.json({
       success: true,
       data: state,
@@ -15,7 +27,11 @@ export async function GET() {
     });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Failed to fetch trip state';
-    return NextResponse.json({ success: false, error: message }, { status: 500 });
+    const status = await getStorageStatus().catch(() => null);
+    return NextResponse.json(
+      { success: false, error: message, storage: status },
+      { status: 500 }
+    );
   }
 }
 
@@ -238,7 +254,7 @@ export async function POST(req: NextRequest) {
           }
 
           // Asynchronously trigger blob deletion in background
-          deleteDocumentFile(doc.fileUrl, doc.id).catch((err) => {
+          deleteDocumentFile(doc.fileUrl).catch((err) => {
             console.error('Failed to delete document file:', err);
           });
 
@@ -297,3 +313,4 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: false, error: message }, { status: 500 });
   }
 }
+

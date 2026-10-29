@@ -14,3 +14,4 @@ export const remachineScript = localFont({
   display: 'swap',
   fallback: ['cursive', 'system-ui'],
 });
+

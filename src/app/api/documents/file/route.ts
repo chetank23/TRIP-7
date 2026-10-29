@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getLocalDocumentFile, readState } from '@/lib/storage';
+import { readState } from '@/lib/storage';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,36 +12,40 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Document ID is required' }, { status: 400 });
     }
 
-    // Check if document exists in shared state
+    // Retrieve document metadata from authoritative Vercel Blob state
     const state = await readState();
     const doc = state.documents.find((d) => d.id === id);
 
     if (!doc) {
-      return NextResponse.json({ success: false, error: 'Document not found' }, { status: 404 });
+      return NextResponse.json({ success: false, error: 'Document not found in shared trip records' }, { status: 404 });
     }
 
-    // If it's a remote Vercel Blob URL, redirect to it
-    if (doc.fileUrl.startsWith('http')) {
+    if (!doc.fileUrl || !doc.fileUrl.startsWith('http')) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid Vercel Blob document URL' },
+        { status: 500 }
+      );
+    }
+
+    // Proxy the PDF stream from Vercel Blob with strict headers for in-app viewing
+    const blobResponse = await fetch(doc.fileUrl, { cache: 'no-store' });
+    if (!blobResponse.ok) {
+      // If fetching fails, redirect as fallback
       return NextResponse.redirect(doc.fileUrl, 307);
     }
 
-    // Serve local file
-    const local = await getLocalDocumentFile(id);
-    if (!local) {
-      return NextResponse.json({ success: false, error: 'Document file not found on disk' }, { status: 404 });
-    }
-
+    const arrayBuffer = await blobResponse.arrayBuffer();
     const headers = new Headers();
     headers.set('Content-Type', 'application/pdf');
-    headers.set('Content-Disposition', `inline; filename="${encodeURIComponent(local.fileName)}"`);
+    headers.set('Content-Disposition', `inline; filename="${encodeURIComponent(doc.fileName)}"`);
     headers.set('Cache-Control', 'public, max-age=3600');
 
-    return new NextResponse(local.buffer as unknown as BodyInit, {
+    return new NextResponse(arrayBuffer, {
       status: 200,
       headers,
     });
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'Error retrieving document file';
+    const message = error instanceof Error ? error.message : 'Error retrieving document from Vercel Blob';
     return NextResponse.json({ success: false, error: message }, { status: 500 });
   }
 }
