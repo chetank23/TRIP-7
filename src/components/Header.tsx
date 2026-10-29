@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
-import { RefreshCw, Bell, ArrowLeft, Palmtree } from 'lucide-react';
+import { RefreshCw, History, ArrowLeft, Palmtree } from 'lucide-react';
 import { useTrip } from '@/lib/trip-context';
 
 interface HeaderProps {
@@ -141,7 +141,7 @@ export function Header({
             rightAction
           ) : (
             <>
-              {/* Notifications Button */}
+              {/* History & Audit Trail Button */}
               <Link
                 href="/history"
                 className={`w-9 h-9 rounded-full bg-white border flex items-center justify-center active:scale-95 transition-all shadow-sm relative shrink-0 ${
@@ -151,16 +151,16 @@ export function Header({
                 }`}
                 aria-label={
                   hasUnread
-                    ? 'Activity History & Notifications (New activity)'
-                    : 'Activity History & Notifications'
+                    ? 'Activity History & Audit Trail (New modifications recorded)'
+                    : 'Activity History & Audit Trail (Who modified what)'
                 }
                 title={
                   hasUnread
-                    ? 'New activity recorded! Click to view history'
-                    : 'Activity History & Notifications'
+                    ? 'New modifications recorded! Tap to inspect history'
+                    : 'Activity History · Who modified what (Permanent in Blob)'
                 }
               >
-                <Bell className="w-4 h-4 stroke-[2]" />
+                <History className="w-4 h-4 stroke-[2.2]" />
                 {hasUnread && (
                   <span
                     className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#D7192D] ring-2 ring-white animate-pulse"

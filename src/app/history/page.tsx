@@ -14,6 +14,7 @@ import {
   History,
   Clock,
   ArrowRight,
+  ShieldCheck,
 } from 'lucide-react';
 
 type FilterType = 'all' | 'expenses' | 'documents' | 'budget';
@@ -160,7 +161,24 @@ export default function HistoryPage() {
         }
       />
 
-      <main className="max-w-lg mx-auto px-4 pt-3 space-y-4">
+      <main className="max-w-lg mx-auto px-4 pt-3 space-y-3">
+        {/* Permanent Audit Guarantee Banner */}
+        <div className="bg-white/90 rounded-2xl p-3 border border-cream-300 shadow-sm flex items-center justify-between text-xs">
+          <div className="flex items-center space-x-2.5">
+            <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 border border-emerald-100">
+              <ShieldCheck className="w-4 h-4 stroke-[2.2]" />
+            </div>
+            <div>
+              <span className="font-bold text-bvc-text block leading-tight">Permanent Shared Audit Trail</span>
+              <span className="text-[10px] text-bvc-secondary leading-tight block mt-0.5">
+                Every modification is permanently saved in Vercel Blob and cannot be cleared.
+              </span>
+            </div>
+          </div>
+          <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 shrink-0 ml-2">
+            Immutable
+          </span>
+        </div>
         {filteredActivities.length === 0 ? (
           <div className="bg-white rounded-3xl p-8 border border-cream-300 text-center shadow-card flex flex-col items-center justify-center my-6">
             <div className="w-12 h-12 rounded-2xl bg-cream-100 flex items-center justify-center text-bvc-muted mb-3">
