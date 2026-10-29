@@ -83,29 +83,22 @@ export function LandingPage() {
   const currentProfile = selectedProfile || FRIEND_PROFILES[activeSlide] || FRIEND_PROFILES[0];
 
   return (
-    <div className="min-h-screen w-full flex flex-col items-center justify-center bg-[#FEFBF6] px-6 py-10 select-none">
+    <div className="min-h-screen w-full flex flex-col items-center justify-start sm:justify-center bg-[#FEFBF6] px-6 pt-5 pb-10 sm:py-8 select-none">
       <div className="w-full max-w-[340px] flex flex-col items-center text-center">
-        {/* Top App Squircle Icon */}
-        <div className="w-[72px] h-[72px] rounded-[22px] bg-white border border-[#EFE5D8] shadow-[0_4px_16px_rgba(0,0,0,0.03)] flex items-center justify-center mb-3 transition-transform hover:scale-105 overflow-hidden">
-          <img
-            src="/images/bvc_icon.png"
-            alt="BVC Trip"
-            className="w-11 h-11 object-contain"
-          />
+        {/* Brand Title & Tagline (Tree icon removed, moved up) */}
+        <div className="pt-1">
+          <h2 className="text-xl sm:text-2xl font-black text-[#1A171D] tracking-tight">
+            BVC Trip
+          </h2>
+          <p className="text-[10px] uppercase font-bold tracking-[0.24em] text-[#8C8278] mt-1">
+            Explore · Spend · Together
+          </p>
         </div>
 
-        {/* Brand Title & Tagline */}
-        <h2 className="text-xl font-extrabold text-[#1A171D] tracking-tight">
-          BVC Trip
-        </h2>
-        <p className="text-[10px] uppercase font-bold tracking-[0.24em] text-[#8C8278] mt-1">
-          Explore · Spend · Together
-        </p>
-
-        {/* Dedicated Photo Showcase (Positioned Above Heading) */}
-        <div className="mt-5 flex flex-col items-center">
-          {/* Rounded Portrait Card */}
-          <div className="relative w-28 h-28 sm:w-32 sm:h-32 rounded-[28px] bg-white border-2 border-white shadow-[0_10px_25px_rgba(0,0,0,0.06)] overflow-hidden flex items-center justify-center transition-all duration-300">
+        {/* Dedicated Photo Showcase (Enlarged Photo Card) */}
+        <div className="mt-4 flex flex-col items-center">
+          {/* Rounded Portrait Card - Bigger Size */}
+          <div className="relative w-40 h-40 sm:w-48 sm:h-48 rounded-[32px] sm:rounded-[38px] bg-white border-4 border-white shadow-[0_14px_32px_rgba(0,0,0,0.08)] overflow-hidden flex items-center justify-center transition-all duration-300">
             {currentProfile && (
               <img
                 key={currentProfile.name}
@@ -121,15 +114,15 @@ export function LandingPage() {
 
             {/* Fallback avatar if Cloudinary image fails to load */}
             {currentProfile && imageErrorMap[currentProfile.name] && (
-              <div className="absolute inset-0 bg-gradient-to-tr from-[#DD1D32] to-[#FF7A8A] text-white flex items-center justify-center font-extrabold text-2xl">
+              <div className="absolute inset-0 bg-gradient-to-tr from-[#DD1D32] to-[#FF7A8A] text-white flex items-center justify-center font-extrabold text-3xl">
                 {currentProfile.initials}
               </div>
             )}
 
             {/* Subtle name badge during automatic slideshow */}
             {!selectedProfile && currentProfile && (
-              <div className="absolute bottom-1.5 inset-x-2 text-center pointer-events-none">
-                <span className="inline-block px-2.5 py-0.5 rounded-full bg-black/45 backdrop-blur-sm text-[10px] font-bold text-white tracking-wide truncate max-w-full">
+              <div className="absolute bottom-2 inset-x-3 text-center pointer-events-none">
+                <span className="inline-block px-3 py-0.5 rounded-full bg-black/50 backdrop-blur-sm text-[11px] font-bold text-white tracking-wide truncate max-w-full">
                   {currentProfile.name}
                 </span>
               </div>
@@ -137,12 +130,12 @@ export function LandingPage() {
           </div>
 
           {/* Status Area: Personalized Message Pill or 7 Pagination Dots */}
-          <div className="h-8 mt-2 flex items-center justify-center">
+          <div className="h-7 mt-2 flex items-center justify-center">
             {selectedProfile ? (
               /* Playful Personalized Message Pill */
               <div
                 key={selectedProfile.name}
-                className="animate-in fade-in slide-in-from-bottom-2 duration-300 inline-flex items-center gap-1 px-3 py-1 rounded-full bg-white border border-[#EFE5D8] shadow-[0_2px_8px_rgba(0,0,0,0.04)] text-xs font-bold text-[#1A171D]"
+                className="animate-in fade-in slide-in-from-bottom-2 duration-300 inline-flex items-center gap-1 px-3.5 py-1 rounded-full bg-white border border-[#EFE5D8] shadow-[0_2px_8px_rgba(0,0,0,0.04)] text-xs font-bold text-[#1A171D]"
               >
                 <span>{selectedProfile.message}</span>
               </div>
@@ -171,14 +164,14 @@ export function LandingPage() {
         </div>
 
         {/* Main Welcome Heading */}
-        <div className="mt-4 mb-7 text-center">
-          <h1 className="text-3xl sm:text-[38px] font-black text-[#1A171D] tracking-tight leading-[1.12]">
+        <div className="mt-3 mb-5 text-center">
+          <h1 className="text-2xl sm:text-3xl font-black text-[#1A171D] tracking-tight leading-[1.12]">
             Welcome to
           </h1>
-          <h1 className="text-3xl sm:text-[38px] font-black text-[#DD1D32] tracking-tight leading-[1.12] mt-0.5">
+          <h1 className="text-2xl sm:text-3xl font-black text-[#DD1D32] tracking-tight leading-[1.12] mt-0.5">
             BVC Trip!
           </h1>
-          <p className="text-xs sm:text-sm text-[#736B63] font-medium mt-2.5 tracking-tight">
+          <p className="text-xs sm:text-sm text-[#736B63] font-medium mt-1.5 tracking-tight">
             One trip. One budget. Countless memories.
           </p>
         </div>

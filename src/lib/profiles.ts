@@ -80,3 +80,4 @@ export function findProfileByName(input?: string | null): FriendProfile | null {
     ) || null
   );
 }
+
