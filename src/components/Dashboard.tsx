@@ -5,6 +5,7 @@ import { useTrip } from '@/lib/trip-context';
 import { Header } from '@/components/Header';
 import { VirtualBvcCard } from '@/components/VirtualBvcCard';
 import { BudgetSummaryCard } from '@/components/BudgetSummaryCard';
+import { MemberSpendingSummary } from '@/components/MemberSpendingSummary';
 import { CategorySummaryGrid } from '@/components/CategorySummaryGrid';
 import { RecentTransactions } from '@/components/RecentTransactions';
 import { LoadingSkeleton } from '@/components/LoadingSkeleton';
@@ -67,6 +68,9 @@ export function Dashboard() {
 
             {/* Shared Trip Budget Summary */}
             <BudgetSummaryCard />
+
+            {/* Who Paid How Much Section */}
+            <MemberSpendingSummary />
 
             {/* 6 Category Summary Grid */}
             <CategorySummaryGrid />

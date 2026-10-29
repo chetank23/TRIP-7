@@ -117,3 +117,10 @@ export interface ApiResponse<T = unknown> {
   version?: number;
 }
 
+export interface MemberContribution {
+  name: string;
+  totalPaid: number;
+  percentage: number;
+  expenseCount: number;
+}
+

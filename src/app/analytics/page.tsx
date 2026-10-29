@@ -3,6 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import { useTrip } from '@/lib/trip-context';
 import { Header } from '@/components/Header';
+import { MemberSpendingSummary } from '@/components/MemberSpendingSummary';
 import { ExpenseCategory } from '@/types';
 import {
   Utensils,
@@ -332,6 +333,9 @@ export default function AnalyticsPage() {
                 })}
               </div>
             </div>
+
+            {/* 4. Who Paid How Much Section */}
+            <MemberSpendingSummary />
           </>
         )}
       </main>

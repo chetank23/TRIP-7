@@ -41,7 +41,8 @@ export function AddExpenseSheet() {
   const [category, setCategory] = useState<ExpenseCategory>('Food');
   const [paidBy, setPaidBy] = useState<string>('');
   const [date, setDate] = useState<string>('');
-  const [splitWith, setSplitWith] = useState<string>('All (7 members)');
+  const [splitMode, setSplitMode] = useState<'6_members' | 'custom' | 'none'>('6_members');
+  const [customSplitMembers, setCustomSplitMembers] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [formError, setFormError] = useState<string | null>(null);
 
@@ -72,7 +73,15 @@ export function AddExpenseSheet() {
       } catch {
         setDate(new Date().toISOString().slice(0, 16));
       }
-      setSplitWith(editingExpense.splitWith || 'All (7 members)');
+      const sw = editingExpense.splitWith || '';
+      if (sw.includes('No Split') || sw.includes('Personal')) {
+        setSplitMode('none');
+      } else if (sw.includes('Custom') || sw.includes('friends')) {
+        setSplitMode('custom');
+        setCustomSplitMembers(members.slice(0, 6));
+      } else {
+        setSplitMode('6_members');
+      }
     } else {
       setAmount('');
       setPurpose('');
@@ -84,7 +93,8 @@ export function AddExpenseSheet() {
         .toISOString()
         .slice(0, 16);
       setDate(localIso);
-      setSplitWith('All (7 members)');
+      setSplitMode('6_members');
+      setCustomSplitMembers(members.slice(0, 6));
     }
     setFormError(null);
   }, [editingExpense, isAddExpenseOpen, userName, members]);
@@ -117,13 +127,27 @@ export function AddExpenseSheet() {
     }
 
     setIsSubmitting(true);
+    const splitCount =
+      splitMode === '6_members'
+        ? 6
+        : splitMode === 'custom'
+        ? Math.max(customSplitMembers.length, 1)
+        : 1;
+    const perPerson = numAmount > 0 ? Math.round(numAmount / splitCount) : 0;
+    const finalSplitWith =
+      splitMode === '6_members'
+        ? `Split across 6 members (₹${perPerson.toLocaleString('en-IN')}/each)`
+        : splitMode === 'custom'
+        ? `Custom split: ${customSplitMembers.length} members (₹${perPerson.toLocaleString('en-IN')}/each)`
+        : 'Personal Expense (No Split)';
+
     const success = await saveExpense({
       amount: numAmount,
       purpose: purpose.trim(),
       category,
       paidBy: paidBy.trim(),
       date: date ? new Date(date).toISOString() : new Date().toISOString(),
-      splitWith: splitWith.trim(),
+      splitWith: finalSplitWith,
     });
 
     setIsSubmitting(false);
@@ -293,26 +317,134 @@ export function AddExpenseSheet() {
             </div>
           </div>
 
-          {/* Split / Shared with (Optional) */}
-          <div>
-            <label className="block text-xs font-semibold text-bvc-secondary uppercase tracking-wider mb-1.5">
-              Split / Shared with (Optional)
-            </label>
-            <div className="relative">
-              <select
-                value={splitWith}
-                onChange={(e) => setSplitWith(e.target.value)}
-                className="w-full px-4 py-3 rounded-2xl bg-white border border-cream-300 text-sm font-medium text-bvc-text focus:outline-none focus:ring-2 focus:ring-bvc-red/20 focus:border-bvc-red appearance-none pr-10"
-              >
-                <option value="All (7 members)">All (7 members)</option>
-                <option value="Shared Equally">Shared Equally</option>
-                <option value="Group Pool">Group Pool</option>
-                <option value="Custom Split">Custom Split</option>
-              </select>
-              <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-bvc-muted">
-                ▼
-              </div>
+          {/* Split Sharing Option (6 Members Rule & Live Calculation) */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="block text-xs font-semibold text-bvc-secondary uppercase tracking-wider">
+                Split Sharing Option
+              </label>
+              <span className="text-[10px] font-bold text-bvc-deepRed bg-red-50 px-2 py-0.5 rounded-full border border-red-200">
+                6 Members Rule
+              </span>
             </div>
+
+            {/* Split Mode Selector Pills */}
+            <div className="grid grid-cols-3 gap-2">
+              <button
+                type="button"
+                onClick={() => setSplitMode('6_members')}
+                className={`py-2 px-2 rounded-xl text-xs font-bold transition-all border text-center ${
+                  splitMode === '6_members'
+                    ? 'bg-bvc-red text-white border-bvc-red shadow-sm'
+                    : 'bg-white text-bvc-text border-cream-300 hover:bg-cream-50'
+                }`}
+              >
+                6 Members
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setSplitMode('custom');
+                  if (customSplitMembers.length === 0) {
+                    setCustomSplitMembers(members.slice(0, 6));
+                  }
+                }}
+                className={`py-2 px-2 rounded-xl text-xs font-bold transition-all border text-center ${
+                  splitMode === 'custom'
+                    ? 'bg-bvc-red text-white border-bvc-red shadow-sm'
+                    : 'bg-white text-bvc-text border-cream-300 hover:bg-cream-50'
+                }`}
+              >
+                Custom Split
+              </button>
+              <button
+                type="button"
+                onClick={() => setSplitMode('none')}
+                className={`py-2 px-2 rounded-xl text-xs font-bold transition-all border text-center ${
+                  splitMode === 'none'
+                    ? 'bg-bvc-red text-white border-bvc-red shadow-sm'
+                    : 'bg-white text-bvc-text border-cream-300 hover:bg-cream-50'
+                }`}
+              >
+                No Split
+              </button>
+            </div>
+
+            {/* Live Calculation Display Card */}
+            {splitMode !== 'none' && (
+              <div className="p-3.5 rounded-2xl bg-[#FFF9F6] border border-[#FDE5DC] flex items-center justify-between">
+                <div className="flex items-center space-x-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-bvc-peach/30 text-bvc-red flex items-center justify-center font-black text-xs shrink-0">
+                    {splitMode === '6_members' ? 6 : Math.max(customSplitMembers.length, 1)}
+                  </div>
+                  <div>
+                    <span className="text-xs font-bold text-bvc-text block leading-tight">
+                      {splitMode === '6_members'
+                        ? 'Equal 6-Member Split'
+                        : `Split with ${customSplitMembers.length} friends`}
+                    </span>
+                    <span className="text-[10px] text-bvc-secondary font-medium">
+                      {Number(amount) > 0
+                        ? `₹ ${Number(amount).toLocaleString('en-IN')} ÷ ${
+                            splitMode === '6_members' ? 6 : Math.max(customSplitMembers.length, 1)
+                          } members`
+                        : 'Enter amount to see per-person share'}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="text-right shrink-0">
+                  <span className="text-sm font-black text-bvc-deepRed tabular-nums block">
+                    ₹{' '}
+                    {Number(amount) > 0
+                      ? Math.round(
+                          Number(amount) /
+                            (splitMode === '6_members'
+                              ? 6
+                              : Math.max(customSplitMembers.length, 1))
+                        ).toLocaleString('en-IN')
+                      : 0}
+                  </span>
+                  <span className="text-[10px] text-bvc-muted font-medium">per person</span>
+                </div>
+              </div>
+            )}
+
+            {/* Custom Split Member Picker */}
+            {splitMode === 'custom' && (
+              <div className="pt-1.5 space-y-1.5">
+                <span className="text-[10px] font-bold text-bvc-secondary uppercase tracking-wider block">
+                  Select friends included in this split ({customSplitMembers.length} selected):
+                </span>
+                <div className="flex flex-wrap gap-1.5">
+                  {members.map((m) => {
+                    const isIncluded = customSplitMembers.includes(m);
+                    return (
+                      <button
+                        key={m}
+                        type="button"
+                        onClick={() => {
+                          if (isIncluded) {
+                            if (customSplitMembers.length > 1) {
+                              setCustomSplitMembers(customSplitMembers.filter((x) => x !== m));
+                            }
+                          } else {
+                            setCustomSplitMembers([...customSplitMembers, m]);
+                          }
+                        }}
+                        className={`px-2.5 py-1 rounded-full text-[11px] font-bold transition-all border ${
+                          isIncluded
+                            ? 'bg-bvc-deepRed text-white border-bvc-deepRed shadow-xs'
+                            : 'bg-white text-bvc-secondary border-cream-300 hover:bg-cream-50'
+                        }`}
+                      >
+                        {m} {isIncluded ? '✓' : '+'}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Submit Button */}

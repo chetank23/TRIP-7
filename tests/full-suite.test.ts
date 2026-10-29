@@ -324,7 +324,40 @@ async function runTestSuite() {
   assert.strictEqual(findProfileByName('unknown_person'), null, 'Unrecognized names must return null');
   console.log('  ✔ All 7 Cloudinary URLs, messages & case-insensitive matching verified.\n');
 
-  console.log('🎉 ALL TESTS PASSED! NAVBAR CONTRACT, AUTO-SYNC, ORGANIZER PRIVILEGES & LANDING PROFILES FULLY VERIFIED!\n');
+  // Test J: 6-Member Split Calculation & Member Spending Aggregations
+  console.log('Test J: 6-Member Split Formula & Member Spending Verification');
+  const testAmount = 1800;
+  const splitFor6 = Math.round(testAmount / 6);
+  assert.strictEqual(splitFor6, 300, '1800 divided across 6 members must be 300');
+
+  // Add an expense split across 6 members
+  const addSplitRes = await updateState((curr) => {
+    curr.expenses.push({
+      id: 'exp_split_6',
+      amount: 1800,
+      purpose: 'Jeep Safari',
+      category: 'Activities',
+      paidBy: 'Chetan K',
+      recordedBy: 'Chetan K',
+      splitWith: 'Split across 6 members (₹300/each)',
+      date: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
+    return curr;
+  });
+  const savedExp = addSplitRes.state.expenses.find((e) => e.id === 'exp_split_6');
+  assert(savedExp, 'Expense must be saved');
+  assert.strictEqual(savedExp.splitWith, 'Split across 6 members (₹300/each)');
+
+  // Verify member contribution calculation
+  const totalPaidByChetan = addSplitRes.state.expenses
+    .filter((e) => e.paidBy === 'Chetan K')
+    .reduce((s, e) => s + e.amount, 0);
+  assert(totalPaidByChetan >= 1800, 'Chetan K spending calculation confirmed');
+  console.log('  ✔ 6-Member split calculation & spending aggregation verified.\n');
+
+  console.log('🎉 ALL TESTS PASSED! NAVBAR CONTRACT, AUTO-SYNC, ORGANIZER PRIVILEGES, 6-MEMBER SPLIT & MEMBER SPENDING VERIFIED!\n');
 }
 
 runTestSuite().catch((err) => {

@@ -9,6 +9,7 @@ import {
   StorageStatus,
   DocumentCategory,
   ExpenseCategory,
+  MemberContribution,
 } from '@/types';
 import { isOrganizer } from '@/lib/auth';
 
@@ -35,6 +36,7 @@ interface TripContextType {
   remainingBudget: number;
   spentPercentage: number;
   categorySpending: Record<ExpenseCategory, number>;
+  memberSpending: MemberContribution[];
   
   // Modals & Sheets
   isAddExpenseOpen: boolean;
@@ -286,6 +288,40 @@ export function TripProvider({ children }: { children: React.ReactNode }) {
       }
     }
     return totals;
+  }, [state]);
+
+  const memberSpending = useMemo<MemberContribution[]>(() => {
+    const fallbackMembers = [
+      'Chetan K',
+      'Adithi',
+      'Harshitha',
+      'Dharma',
+      'Lavanya',
+      'Rohith',
+      'Vyshnavi',
+    ];
+    const members = state?.members && state.members.length > 0 ? state.members : fallbackMembers;
+    const expenses = state?.expenses || [];
+    const grandTotal = expenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+
+    const list: MemberContribution[] = members.map((member) => {
+      const matchName = member.toLowerCase();
+      const memberExps = expenses.filter((e) => {
+        const p = (e.paidBy || '').toLowerCase();
+        return p === matchName || p.startsWith(matchName) || matchName.startsWith(p);
+      });
+      const totalPaid = memberExps.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+      const percentage = grandTotal > 0 ? Math.round((totalPaid / grandTotal) * 100) : 0;
+      return {
+        name: member,
+        totalPaid,
+        percentage,
+        expenseCount: memberExps.length,
+      };
+    });
+
+    // Sort by highest paid first
+    return list.sort((a, b) => b.totalPaid - a.totalPaid);
   }, [state]);
 
   // Modals controls
@@ -646,6 +682,7 @@ export function TripProvider({ children }: { children: React.ReactNode }) {
     remainingBudget,
     spentPercentage,
     categorySpending,
+    memberSpending,
     isAddExpenseOpen,
     editingExpense,
     openAddExpense,
