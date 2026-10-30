@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { useTrip } from '@/lib/trip-context';
-import { Pencil, Plus, AlertCircle } from 'lucide-react';
+import { Pencil, Plus, AlertCircle, Palmtree } from 'lucide-react';
 
 export function BudgetSummaryCard() {
   const {
@@ -18,7 +18,7 @@ export function BudgetSummaryCard() {
   const isOverBudget = isConfigured && remainingBudget < 0;
 
   return (
-    <div className="w-full bg-white rounded-3xl p-5 border border-cream-300 shadow-card transition-all">
+    <div className="bvc-glass-surface w-full bg-white/85 rounded-3xl p-5 border border-white/80 shadow-card transition-all">
       {/* Top row: Label & Edit Action */}
       <div className="flex items-center justify-between mb-2">
         <span className="text-xs font-bold text-bvc-secondary uppercase tracking-wider">
