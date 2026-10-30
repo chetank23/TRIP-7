@@ -1,5 +1,6 @@
 // BVC Trip Lightweight PWA Service Worker for iOS (iPhone 14+) & Android
-const CACHE_NAME = 'bvc-trip-v1';
+// Bump this when application bundles change so old offline HTML/assets are discarded.
+const CACHE_NAME = 'bvc-trip-v2';
 
 const STATIC_ASSETS = [
   '/',
@@ -79,4 +80,3 @@ self.addEventListener('fetch', (event) => {
       })
   );
 });
-
