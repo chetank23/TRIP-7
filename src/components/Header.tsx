@@ -81,15 +81,15 @@ export function Header({
       : `${membersCount} friends · One budget · Many memories`;
 
   return (
-    <header className="sticky top-0 z-30 pt-safe bg-[#FEFBF6]/95 backdrop-blur-md px-3.5 sm:px-5 py-3.5 sm:py-4 border-b border-[#EFE3D7]/70 shadow-[0_2px_8px_rgba(0,0,0,0.03)] select-none">
-      <div className="w-full max-w-lg mx-auto grid grid-cols-[88px_1fr_88px] sm:grid-cols-[96px_1fr_96px] items-center gap-1.5 sm:gap-2.5">
+    <header className="sticky top-0 z-30 w-full app-header-safe-area bg-[#FEFBF6]/95 backdrop-blur-md border-b border-[#EFE3D7]/70 shadow-[0_2px_8px_rgba(0,0,0,0.03)] select-none">
+      <div className="w-full max-w-lg mx-auto grid grid-cols-[88px_minmax(0,1fr)_88px] items-center gap-1.5 sm:gap-2.5">
         {/* ================= LEFT SECTION ================= */}
         <div className="flex items-center gap-2 shrink-0 justify-start">
           {showBack ? (
             <button
               type="button"
               onClick={() => router.back()}
-              className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-white border border-[#EFE3D7] flex items-center justify-center text-[#242126] hover:bg-[#F6EDE2] hover:border-[#D7192D]/40 active:scale-95 transition-all shadow-sm shrink-0"
+              className="w-10 h-10 rounded-full bg-white border border-[#EFE3D7] flex items-center justify-center text-[#242126] hover:bg-[#F6EDE2] hover:border-[#D7192D]/40 active:scale-95 transition-all shadow-sm shrink-0"
               aria-label="Go back"
               title="Go back"
             >
@@ -100,14 +100,12 @@ export function Header({
               type="button"
               onClick={handleRefresh}
               disabled={isSyncing}
-              className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-white border border-[#EFE3D7] flex items-center justify-center text-[#81766C] hover:text-[#D7192D] hover:border-[#D7192D]/40 hover:bg-[#F6EDE2] active:scale-95 transition-all shadow-sm disabled:opacity-60 shrink-0"
+              className="w-10 h-10 rounded-full bg-white border border-[#EFE3D7] flex items-center justify-center text-[#81766C] hover:text-[#D7192D] hover:border-[#D7192D]/40 hover:bg-[#F6EDE2] active:scale-95 transition-all shadow-sm disabled:opacity-60 shrink-0"
               aria-label="Refresh shared data"
               title="Refresh shared data"
             >
               <RefreshCw
-                className={`w-4.5 h-4.5 sm:w-5 sm:h-5 stroke-[2.2] ${
-                  isSyncing ? 'animate-spin text-[#D7192D]' : ''
-                }`}
+                className={`w-4.5 h-4.5 stroke-[2.2] ${isSyncing ? 'animate-spin text-[#D7192D]' : ''}`}
               />
             </button>
           )}
@@ -115,7 +113,7 @@ export function Header({
           {/* Palm-Tree App Logo Icon */}
           <Link
             href="/"
-            className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-[#FFC49B]/30 border border-[#FFC49B]/40 flex items-center justify-center text-[#D7192D] shrink-0 hover:scale-105 active:scale-95 transition-transform shadow-xs"
+            className="w-10 h-10 rounded-2xl bg-[#FFC49B]/30 border border-[#FFC49B]/40 flex items-center justify-center text-[#D7192D] shrink-0 hover:scale-105 active:scale-95 transition-transform shadow-xs"
             aria-label="BVC Trip Home"
             title="BVC Trip Home"
           >
@@ -144,7 +142,7 @@ export function Header({
               {/* History & Audit Trail Button */}
               <Link
                 href="/history"
-                className={`w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-white border flex items-center justify-center active:scale-95 transition-all shadow-sm relative shrink-0 ${
+                className={`w-10 h-10 rounded-full bg-white border flex items-center justify-center active:scale-95 transition-all shadow-sm relative shrink-0 ${
                   isHistoryPage
                     ? 'border-[#D7192D] text-[#D7192D] bg-[#FFF8F7]'
                     : 'border-[#EFE3D7] text-[#81766C] hover:text-[#D7192D] hover:border-[#D7192D]/40 hover:bg-[#F6EDE2]'
@@ -172,7 +170,7 @@ export function Header({
               {/* User Avatar Initial */}
               <Link
                 href="/settings"
-                className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-gradient-to-tr from-[#D7192D] to-[#FFC49B] text-white flex items-center justify-center font-black text-xs sm:text-sm shadow-sm ring-2 ring-white hover:opacity-90 active:scale-95 transition-all shrink-0"
+                className="w-10 h-10 rounded-full bg-gradient-to-tr from-[#D7192D] to-[#FFC49B] text-white flex items-center justify-center font-black text-xs shadow-sm ring-2 ring-white hover:opacity-90 active:scale-95 transition-all shrink-0"
                 aria-label={`Logged in as ${userName || 'You'}. Open settings.`}
                 title={`Logged in as ${userName || 'Member'} (Click for Settings)`}
               >
