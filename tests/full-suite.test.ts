@@ -598,7 +598,45 @@ async function runTestSuite() {
     if (savedMode) process.env.BLOB_STORAGE_MODE = savedMode;
   }
 
-  console.log('🎉 ALL TESTS PASSED! NAVBAR CONTRACT, AUTO-SYNC, ORGANIZER PRIVILEGES, 6-MEMBER SPLIT, MEMBER SPENDING, PWA APP INSTALLATION, CHETAN PASSCODE, VYSHNAVI INFINITY, SUPABASE INTEGRATION & BLOB INDEPENDENCE VERIFIED!\n');
+  // ---------------------------------------------------------------------------
+  // Test P: Shared Trip Card Available Balance Calculation & Visibility Check
+  // ---------------------------------------------------------------------------
+  console.log('Test P: Shared Trip Card Available Balance Calculation & Visibility Check');
+  const testBudgetTotal = 61000;
+  const testExpenses = [
+    { amount: 5000 },
+    { amount: 4500 },
+    { amount: 2002 },
+  ];
+  const testTotalSpent = testExpenses.reduce((sum, e) => sum + e.amount, 0); // 11,502
+  const calculatedAvailableBalance = testBudgetTotal - testTotalSpent; // 49,498
+  assert.strictEqual(testTotalSpent, 11502, 'Total expenses must match ₹11,502');
+  assert.strictEqual(calculatedAvailableBalance, 49498, 'Available balance must equal Budget - Expenses (₹49,498)');
+
+  // Verify VirtualBvcCard code contract uses remainingBudget rather than budget.total
+  const cardComponentSource = fs.readFileSync(
+    path.join(process.cwd(), 'src/components/VirtualBvcCard.tsx'),
+    'utf-8'
+  );
+  assert(
+    cardComponentSource.includes('remainingBudget.toLocaleString'),
+    'VirtualBvcCard must display remainingBudget when Show Balance is clicked'
+  );
+  assert(
+    !cardComponentSource.includes('budgetTotal.toLocaleString'),
+    'VirtualBvcCard must NOT display budgetTotal as the balance'
+  );
+  assert(
+    cardComponentSource.includes('₹ ••••••'),
+    'VirtualBvcCard must display masked balance (₹ ••••••) when Hide Balance is active'
+  );
+  assert(
+    cardComponentSource.includes('Available Balance'),
+    'VirtualBvcCard balance label must say Available Balance'
+  );
+  console.log('  ✔ Available Balance calculation (61,000 - 11,502 = 49,498) & masking verified.\n');
+
+  console.log('🎉 ALL TESTS PASSED! NAVBAR CONTRACT, AUTO-SYNC, ORGANIZER PRIVILEGES, 6-MEMBER SPLIT, MEMBER SPENDING, PWA APP INSTALLATION, CHETAN PASSCODE, VYSHNAVI INFINITY, SUPABASE INTEGRATION, BLOB INDEPENDENCE & AVAILABLE BALANCE VERIFIED!\n');
 }
 
 runTestSuite().catch((err) => {

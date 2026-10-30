@@ -5,10 +5,9 @@ import { Eye, EyeOff, Sparkles } from 'lucide-react';
 import { useTrip } from '@/lib/trip-context';
 
 export function VirtualBvcCard() {
-  const { state, openBudgetModal } = useTrip();
+  const { state, remainingBudget, openBudgetModal } = useTrip();
   const [isBalanceVisible, setIsBalanceVisible] = useState<boolean>(false);
 
-  const budgetTotal = state?.budget?.total || 0;
   const isConfigured = Boolean(state?.budget?.isConfigured);
 
   return (
@@ -60,12 +59,12 @@ export function VirtualBvcCard() {
         {/* Revealed or Masked Shared Trip Balance */}
         <div className="text-right">
           <span className="text-[10px] uppercase tracking-wider text-white/70 block">
-            Trip Budget Balance
+            Available Balance
           </span>
           {isBalanceVisible ? (
             isConfigured ? (
               <span className="text-2xl font-black text-white tracking-tight tabular-nums animate-in fade-in duration-200">
-                ₹ {budgetTotal.toLocaleString('en-IN')}
+                ₹ {remainingBudget.toLocaleString('en-IN')}
               </span>
             ) : (
               <button
@@ -78,7 +77,7 @@ export function VirtualBvcCard() {
             )
           ) : (
             <span className="text-xl font-bold tracking-widest text-white/80 tabular-nums">
-              ••••••••
+              ₹ ••••••
             </span>
           )}
         </div>
