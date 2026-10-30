@@ -15,7 +15,7 @@ export function Dashboard() {
   const { userName, isLoading, storageStatus } = useTrip();
 
   return (
-    <div className="min-h-screen bg-bvc-bg pb-28">
+    <div className="dashboard-page min-h-screen bg-bvc-bg pb-28">
       <Header />
 
       <main className="max-w-lg mx-auto px-4 pt-0 space-y-4">
