@@ -21,9 +21,14 @@ export function BudgetSummaryCard() {
     <div className="bvc-glass-surface w-full bg-white/85 rounded-3xl p-5 border border-white/80 shadow-card transition-all">
       {/* Top row: Label & Edit Action */}
       <div className="flex items-center justify-between mb-2">
-        <span className="text-xs font-bold text-bvc-secondary uppercase tracking-wider">
-          Trip Budget
-        </span>
+        <div className="flex items-center gap-2.5">
+          <span className="w-9 h-9 rounded-2xl bg-[#E7F1E6] text-[#2F6B4F] flex items-center justify-center shrink-0">
+            <Palmtree className="w-5 h-5" strokeWidth={2} />
+          </span>
+          <span className="text-xs font-bold text-bvc-secondary uppercase tracking-wider">
+            Trip Budget
+          </span>
+        </div>
         <button
           type="button"
           onClick={openBudgetModal}
