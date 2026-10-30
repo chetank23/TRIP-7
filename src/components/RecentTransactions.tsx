@@ -65,15 +65,15 @@ export function RecentTransactions() {
   const recentExpenses = expenses.slice(0, 5);
 
   return (
-    <div className="bvc-glass-surface w-full bg-white/88 rounded-3xl p-5 border border-white/85 shadow-card">
+    <div className="w-full bg-white rounded-3xl p-5 border border-cream-300 shadow-card">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-bold text-bvc-text">Recent Transactions</h3>
+        <h3 className="text-sm font-bold text-bvc-text">Operations</h3>
         <Link
           href="/transactions"
           className="text-xs font-semibold text-bvc-red hover:underline flex items-center space-x-1"
         >
-          <span>View All</span>
+          <span>Full records</span>
           <ChevronRight className="w-3.5 h-3.5" />
         </Link>
       </div>
