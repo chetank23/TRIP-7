@@ -12,6 +12,7 @@ import {
   MemberContribution,
 } from '@/types';
 import { isOrganizer, setOrganizerVerified } from '@/lib/auth';
+import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 
 interface ToastState {
   id: string;
@@ -30,33 +31,33 @@ interface TripContextType {
   error: string | null;
   storageStatus: StorageStatus | null;
   refreshState: () => Promise<void>;
-  
+
   // Computed financial totals
   totalSpent: number;
   remainingBudget: number;
   spentPercentage: number;
   categorySpending: Record<ExpenseCategory, number>;
   memberSpending: MemberContribution[];
-  
+
   // Modals & Sheets
   isAddExpenseOpen: boolean;
   editingExpense: Expense | null;
   openAddExpense: (expenseToEdit?: Expense) => void;
   closeAddExpense: () => void;
-  
+
   deleteExpenseTarget: Expense | null;
   promptDeleteExpense: (expense: Expense) => void;
   closeDeleteConfirm: () => void;
   confirmDeleteExpense: () => Promise<boolean>;
-  
+
   isBudgetModalOpen: boolean;
   openBudgetModal: () => void;
   closeBudgetModal: () => void;
-  
+
   activePdfDoc: TripDocument | null;
   openPdfViewer: (doc: TripDocument) => void;
   closePdfViewer: () => void;
-  
+
   // CRUD Actions
   saveExpense: (data: {
     amount: number;
@@ -67,14 +68,14 @@ interface TripContextType {
     splitWith?: string;
     notes?: string;
   }) => Promise<boolean>;
-  
+
   updateBudget: (total: number) => Promise<boolean>;
   uploadDocument: (file: File, title: string, category: DocumentCategory) => Promise<boolean>;
   updateDocumentMetadata: (id: string, title: string, category: DocumentCategory) => Promise<boolean>;
   deleteDocument: (id: string) => Promise<boolean>;
   clearAllData: (options?: { resetBudget?: boolean; clearActivities?: boolean; wipeEverything?: boolean }) => Promise<boolean>;
   isOrganizerUser: boolean;
-  
+
   // Toast notifications
   toast: ToastState | null;
   showToast: (message: string, type?: 'success' | 'error' | 'info') => void;
@@ -144,17 +145,52 @@ export function TripProvider({ children }: { children: React.ReactNode }) {
     setOrganizerVerified(false);
     try {
       localStorage.removeItem(USER_STORAGE_KEY);
-    } catch {}
+    } catch { }
   }, []);
 
   const isFetchingRef = useRef<boolean>(false);
   const lastVersionRef = useRef<number>(0);
+  const realtimeClientRef = useRef<ReturnType<typeof getSupabaseBrowserClient>>(null);
+  const realtimeChannelRef = useRef<any>(null);
+
+  // Setup Supabase Realtime for instant cross-browser synchronization
+  const setupRealtime = useCallback((customUrl?: string) => {
+    if (typeof window === 'undefined' || realtimeChannelRef.current) return;
+
+    try {
+      const client = getSupabaseBrowserClient(customUrl);
+      if (!client) return;
+
+      realtimeClientRef.current = client;
+      const channel = client
+        .channel('bvc_shared_trip_realtime')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'expenses' }, () => {
+          fetchState(true);
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'trip_config' }, () => {
+          fetchState(true);
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'activities' }, () => {
+          fetchState(true);
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'documents' }, () => {
+          fetchState(true);
+        })
+        .subscribe();
+
+      realtimeChannelRef.current = channel;
+    } catch (err) {
+      console.warn('Realtime subscription notice:', err);
+    }
+  }, []);
 
   // Fetch shared state from server with cache busting and concurrency protection
   const fetchState = useCallback(async (isBackground = false) => {
     // Avoid overlapping requests
     if (isFetchingRef.current) return;
     isFetchingRef.current = true;
+
+    const fetchStartTime = Date.now();
 
     if (!isBackground) setIsLoading(true);
     else setIsSyncing(true);
@@ -171,6 +207,11 @@ export function TripProvider({ children }: { children: React.ReactNode }) {
 
       if (data?.storage) {
         setStorageStatus(data.storage);
+      }
+
+      // If server provides Supabase Realtime URL, establish live subscription
+      if (data?.realtime?.supabaseUrl && !realtimeChannelRef.current) {
+        setupRealtime(data.realtime.supabaseUrl);
       }
 
       if (!res.ok || !data?.success) {
@@ -191,16 +232,23 @@ export function TripProvider({ children }: { children: React.ReactNode }) {
         setError(null);
       }
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Error syncing state with Vercel Blob';
+      const msg = err instanceof Error ? err.message : 'Error syncing state with storage';
       if (!isBackground) setError(msg);
       // In background polling, log gentle warning without alarming user
       console.warn('Background sync network retry scheduled:', err);
     } finally {
       isFetchingRef.current = false;
-      if (!isBackground) setIsLoading(false);
+      if (!isBackground) {
+        // Provide an intentional minimum loading time (~650ms) for smooth visual feedback
+        const elapsed = Date.now() - fetchStartTime;
+        if (elapsed < 650) {
+          await new Promise((resolve) => setTimeout(resolve, 650 - elapsed));
+        }
+        setIsLoading(false);
+      }
       setIsSyncing(false);
     }
-  }, []);
+  }, [setupRealtime]);
 
   // Automated shared data synchronization (30s polling while active in page, with Page Visibility & Reconnect handling)
   useEffect(() => {
@@ -226,6 +274,7 @@ export function TripProvider({ children }: { children: React.ReactNode }) {
     };
 
     startPolling();
+    setupRealtime();
 
     // 3. Tab visibility change: refresh immediately when returning to tab
     const handleVisibilityChange = () => {
@@ -251,8 +300,14 @@ export function TripProvider({ children }: { children: React.ReactNode }) {
       stopPolling();
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('online', handleOnline);
+      if (realtimeClientRef.current && realtimeChannelRef.current) {
+        try {
+          realtimeClientRef.current.removeChannel(realtimeChannelRef.current);
+          realtimeChannelRef.current = null;
+        } catch { }
+      }
     };
-  }, [fetchState]);
+  }, [fetchState, setupRealtime]);
 
   // Financial calculations derived authoritatively from actual state
   const totalSpent = useMemo(() => {

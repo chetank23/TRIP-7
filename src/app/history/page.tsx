@@ -178,7 +178,7 @@ export default function HistoryPage() {
             <div>
               <span className="font-bold text-bvc-text block leading-tight">Permanent Shared Audit Trail</span>
               <span className="text-[10px] text-bvc-secondary leading-tight block mt-0.5">
-                Every modification is permanently saved in Vercel Blob and cannot be cleared.
+                Every modification is permanently saved in PostgreSQL and cannot be cleared.
               </span>
             </div>
           </div>

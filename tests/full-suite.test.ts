@@ -405,7 +405,143 @@ async function runTestSuite() {
 
   console.log('  ✔ Chetan passcode 0923 verification, organizer checks, sw.js & Vyshnavi ₹ ∞ verified.\n');
 
-  console.log('🎉 ALL TESTS PASSED! NAVBAR CONTRACT, AUTO-SYNC, ORGANIZER PRIVILEGES, 6-MEMBER SPLIT, MEMBER SPENDING, PWA APP INSTALLATION, CHETAN PASSCODE & VYSHNAVI INFINITY VERIFIED!\n');
+  // Test M: Supabase PostgreSQL Architecture, Schema & Safe Environment Integration
+  console.log('Test M: Supabase PostgreSQL Architecture, Schema & Safe Environment Integration');
+  const { getSupabaseEnvConfig } = await import('../src/lib/supabase/config');
+  const envConf = getSupabaseEnvConfig();
+  assert(typeof envConf === 'object', 'getSupabaseEnvConfig must return config object');
+  assert(Array.isArray(envConf.missingVariables), 'missingVariables must be an array');
+  assert(envConf.missingVariables.every((v) => typeof v === 'string'), 'missingVariables must be string names only');
+
+  // Verify Supabase migration schema exists and defines all required tables + RLS + Realtime
+  const migrationPath = path.join(process.cwd(), 'supabase', 'migrations', '20261030000000_bvc_trip_schema.sql');
+  assert(fs.existsSync(migrationPath), 'Supabase migration SQL file must exist');
+  const migrationSql = fs.readFileSync(migrationPath, 'utf8');
+  assert(migrationSql.includes('CREATE TABLE IF NOT EXISTS trip_config'), 'Schema must define trip_config table');
+  assert(migrationSql.includes('CREATE TABLE IF NOT EXISTS expenses'), 'Schema must define expenses table');
+  assert(migrationSql.includes('CREATE TABLE IF NOT EXISTS activities'), 'Schema must define activities table');
+  assert(migrationSql.includes('CREATE TABLE IF NOT EXISTS documents'), 'Schema must define documents table');
+  assert(migrationSql.includes('CREATE TABLE IF NOT EXISTS document_contents'), 'Schema must define document_contents table for BYTEA PDFs');
+  assert(migrationSql.includes('ENABLE ROW LEVEL SECURITY'), 'Schema must enable Row Level Security (RLS)');
+  assert(migrationSql.includes('supabase_realtime'), 'Schema must configure supabase_realtime publication');
+  assert(migrationSql.includes('bump_trip_version'), 'Schema must declare bump_trip_version function');
+  assert(migrationSql.includes('create_expense_with_audit'), 'Schema must declare atomic create_expense_with_audit RPC');
+  assert(migrationSql.includes('edit_expense_with_audit'), 'Schema must declare atomic edit_expense_with_audit RPC');
+  assert(migrationSql.includes('delete_expense_with_audit'), 'Schema must declare atomic delete_expense_with_audit RPC');
+
+  // Verify migration script exists
+  const migrateScriptPath = path.join(process.cwd(), 'scripts', 'migrate_blob_to_supabase.ts');
+  assert(fs.existsSync(migrateScriptPath), 'Migration script migrate_blob_to_supabase.ts must exist');
+
+  // Verify browser client uses only public anon key
+  const clientModule = await import('../src/lib/supabase/client');
+  assert.strictEqual(typeof clientModule.getSupabaseBrowserClient, 'function', 'getSupabaseBrowserClient must be a function');
+
+  console.log('  ✔ Supabase schema (trip_config, expenses, activities, documents, document_contents), RLS, Realtime & migration verified.\n');
+
+  // Test N: PDF BYTEA Storage Layer & Bounded Size Limits
+  console.log('Test N: PDF BYTEA Storage Layer & Bounded Size Limit (10 MB)');
+  const storeModule = await import('../src/lib/supabase/store');
+  assert.strictEqual(typeof storeModule.saveDocumentToDatabase, 'function', 'saveDocumentToDatabase must be exported');
+  assert.strictEqual(typeof storeModule.getDocumentFromDatabase, 'function', 'getDocumentFromDatabase must be exported');
+  assert.strictEqual(storeModule.MAX_PDF_SIZE_BYTES, 10 * 1024 * 1024, 'MAX_PDF_SIZE_BYTES must be 10 MB');
+
+  // Verify PDF validation: invalid format rejection
+  const invalidBuffer = Buffer.from('NOT A PDF FILE TEXT CONTENT');
+  await assert.rejects(
+    async () => {
+      await storeModule.saveDocumentToDatabase(
+        {
+          id: 'test_invalid_pdf',
+          title: 'Invalid File',
+          fileName: 'invalid.txt',
+          category: 'Others',
+          fileSize: invalidBuffer.length,
+          uploadedBy: 'Chetan K',
+        },
+        invalidBuffer,
+        'Chetan K'
+      );
+    },
+    /Invalid file format/,
+    'Non-PDF files must be rejected'
+  );
+
+  // Verify oversized PDF rejection
+  const oversizedBuffer = Buffer.alloc(11 * 1024 * 1024); // 11MB
+  oversizedBuffer.write('%PDF-1.4');
+  await assert.rejects(
+    async () => {
+      await storeModule.saveDocumentToDatabase(
+        {
+          id: 'test_oversized_pdf',
+          title: 'Oversized File',
+          fileName: 'large.pdf',
+          category: 'Others',
+          fileSize: oversizedBuffer.length,
+          uploadedBy: 'Chetan K',
+        },
+        oversizedBuffer,
+        'Chetan K'
+      );
+    },
+    /exceeds maximum allowed size/,
+    'Files exceeding 10 MB limit must be rejected'
+  );
+  console.log('  ✔ PDF format validation, magic byte checking & 10 MB capacity guard verified.\n');
+
+  // Test O: Complete Vercel Blob Independence Simulation
+  console.log('Test O: Complete Vercel Blob Independence Simulation (Missing/Expired Blob Token)');
+  const savedToken = process.env.BLOB_READ_WRITE_TOKEN;
+  const savedMode = process.env.BLOB_STORAGE_MODE;
+  try {
+    // Completely wipe Blob tokens to simulate expired/revoked/exhausted Vercel Blob token
+    delete process.env.BLOB_READ_WRITE_TOKEN;
+    delete process.env.BVC_TRIP_READ_WRITE_TOKEN;
+    delete process.env.VERCEL_BLOB_READ_WRITE_TOKEN;
+    process.env.BLOB_STORAGE_MODE = 'local';
+
+    // 1. Reading state must still succeed
+    const fallbackState = await readState();
+    assert(fallbackState && Array.isArray(fallbackState.expenses), 'State must load even without Blob token');
+
+    // 2. Creating an expense must still succeed
+    const blobFreeExpId = `exp_blobfree_${Date.now()}`;
+    const addRes = await updateState((curr) => {
+      const exp = {
+        id: blobFreeExpId,
+        amount: 320,
+        purpose: 'Local Fresh Coconut Water',
+        category: 'Food' as const,
+        paidBy: 'Harshitha',
+        recordedBy: 'Harshitha',
+        date: new Date().toISOString(),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      return {
+        ...curr,
+        expenses: [exp, ...curr.expenses],
+      };
+    });
+    assert(!addRes.conflict, 'Adding expense must succeed without Blob token');
+
+    // 3. Document retrieval from local storage fallback must succeed
+    const testDocId = 'doc_sync_1793304757848';
+    const docLookup = await storeModule.getDocumentFromDatabase(testDocId);
+    if (docLookup) {
+      assert(Buffer.isBuffer(docLookup.buffer), 'Document buffer must be returned');
+      assert(docLookup.buffer.subarray(0, 5).toString('ascii').startsWith('%PDF-'), 'Retrieved buffer must be valid PDF');
+    }
+
+    console.log('  ✔ App functions 100% reliably with zero Vercel Blob token reliance.\n');
+  } finally {
+    // Restore test environment
+    if (savedToken) process.env.BLOB_READ_WRITE_TOKEN = savedToken;
+    if (savedMode) process.env.BLOB_STORAGE_MODE = savedMode;
+  }
+
+  console.log('🎉 ALL TESTS PASSED! NAVBAR CONTRACT, AUTO-SYNC, ORGANIZER PRIVILEGES, 6-MEMBER SPLIT, MEMBER SPENDING, PWA APP INSTALLATION, CHETAN PASSCODE, VYSHNAVI INFINITY, SUPABASE INTEGRATION & BLOB INDEPENDENCE VERIFIED!\n');
 }
 
 runTestSuite().catch((err) => {

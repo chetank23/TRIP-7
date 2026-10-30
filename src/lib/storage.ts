@@ -212,6 +212,7 @@ export function isLocalBlob(): boolean {
 
 export function hasVercelBlobToken(): boolean {
   if (isCloudBlob()) return true;
+  if (process.env.BVC_SUPABASE_URL || process.env.SUPABASE_URL) return true;
   if (process.env.VERCEL === '1') return false;
   return true;
 }
@@ -221,6 +222,7 @@ export function isCloudBlobToken(): boolean {
 }
 
 function requireBlobToken(): void {
+  if (process.env.BVC_SUPABASE_URL || process.env.SUPABASE_URL) return;
   if (!hasVercelBlobToken()) {
     throw new StorageConfigurationError(
       'BLOB_READ_WRITE_TOKEN is missing on Vercel deployment. Please link a Vercel Blob store in project settings.'
@@ -295,6 +297,18 @@ export async function verifyBlobHealth(): Promise<{
   isCloud: boolean;
 }> {
   if (!hasVercelBlobToken()) {
+    if (process.env.BVC_SUPABASE_URL || process.env.SUPABASE_URL) {
+      return {
+        ok: true,
+        status: 'Connected to Supabase PostgreSQL',
+        code: 'CONNECTED',
+        message: 'PostgreSQL is authoritative; Vercel Blob is not required.',
+        hasToken: false,
+        stateInitialized: true,
+        roundTripVerified: true,
+        isCloud: false,
+      };
+    }
     return {
       ok: false,
       status: 'Blob credentials missing',

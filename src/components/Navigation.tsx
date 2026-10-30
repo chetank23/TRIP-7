@@ -14,10 +14,10 @@ export function Navigation() {
   if (!userName) return null;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-40 flex justify-center px-3 sm:px-4 pb-[calc(0.85rem+env(safe-area-inset-bottom,0px))] pointer-events-none select-none">
+    <div className="fixed bottom-0 left-0 right-0 z-40 flex justify-center px-3 sm:px-4 pb-[calc(0.95rem+env(safe-area-inset-bottom,0px))] pointer-events-none select-none">
       <nav
         aria-label="Bottom Navigation"
-        className="pointer-events-auto w-full max-w-md glass-nav rounded-full px-2 sm:px-3 py-1.5 flex items-center justify-between shadow-floating border border-white/80"
+        className="pointer-events-auto w-full max-w-md glass-nav rounded-full px-2.5 sm:px-4 py-2 sm:py-2.5 flex items-center justify-between shadow-floating border border-white/80"
       >
         {/* Home */}
         <Link

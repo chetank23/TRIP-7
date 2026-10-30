@@ -91,22 +91,31 @@ export type StorageStatusCode =
   | 'AUTH_FAILED'
   | 'STATE_NOT_INITIALIZED'
   | 'READ_FAILED'
-  | 'WRITE_FAILED';
+  | 'WRITE_FAILED'
+  | 'CONNECTION_FAILED'
+  | 'TABLE_NOT_FOUND'
+  | string;
 
 export type StorageStatusText =
   | 'Connected to Vercel Blob'
+  | 'Connected to Supabase PostgreSQL'
+  | 'Connected to Supabase PostgreSQL & Vercel Blob'
   | 'Blob credentials missing'
+  | 'Supabase credentials missing'
   | 'Blob authentication failed'
   | 'Shared state not initialized'
   | 'Blob read failed'
-  | 'Blob write failed';
+  | 'Blob write failed'
+  | 'Supabase connection failed'
+  | 'Supabase table error'
+  | string;
 
 export interface StorageStatus {
   connected: boolean;
   status: StorageStatusText;
   code: StorageStatusCode;
   message: string;
-  provider: 'vercel-blob';
+  provider: 'vercel-blob' | 'supabase';
   stateExists?: boolean;
 }
 

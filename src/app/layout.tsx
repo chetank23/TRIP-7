@@ -8,6 +8,7 @@ import { BudgetModal } from '@/components/BudgetModal';
 import { PdfViewerModal } from '@/components/PdfViewerModal';
 import { Toast } from '@/components/Toast';
 import { ServiceWorkerRegister } from '@/components/ServiceWorkerRegister';
+import { PageSwitchTransition } from '@/components/PageSwitchTransition';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -62,7 +63,9 @@ export default function RootLayout({
         <TripProvider>
           <ServiceWorkerRegister />
           <Toast />
-          {children}
+          <PageSwitchTransition>
+            {children}
+          </PageSwitchTransition>
           <Navigation />
           <AddExpenseSheet />
           <DeleteConfirmModal />

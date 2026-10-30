@@ -337,9 +337,11 @@ export default function SettingsPage() {
                     <Database className="w-4 h-4" />
                   </div>
                   <div>
-                    <span className="text-xs font-bold text-bvc-text block">Vercel Blob Storage</span>
+                    <span className="text-xs font-bold text-bvc-text block">
+                      {storageStatus?.provider === 'supabase' ? 'Supabase Database & Blob' : 'Vercel Blob Storage'}
+                    </span>
                     <span className="text-[10px] text-bvc-secondary">
-                      {storageStatus?.message || 'Connecting to Vercel Blob store...'}
+                      {storageStatus?.message || 'Connecting to database & blob store...'}
                     </span>
                   </div>
                 </div>
@@ -371,7 +373,7 @@ export default function SettingsPage() {
               {/* Diagnostic Trigger Button */}
               <div className="mt-2 pt-2 border-t border-cream-200 flex items-center justify-between">
                 <span className="text-[10px] text-bvc-muted">
-                  {storageStatus?.connected ? 'Store Verified & Active' : 'Requires BLOB_READ_WRITE_TOKEN in .env.local'}
+                  {storageStatus?.connected ? 'Store Verified & Active' : 'Configure BVC_ and BLOB_ tokens in Vercel'}
                 </span>
                 <button
                   type="button"
@@ -380,7 +382,7 @@ export default function SettingsPage() {
                       const res = await fetch('/api/storage/health');
                       const json = await res.json();
                       if (json.ok) {
-                        showToast('Vercel Blob health check verified: Write/read round-trip passed!', 'success');
+                        showToast('Database & Storage health check verified: All services active!', 'success');
                       } else {
                         showToast(`Storage Status: ${json.status}. ${json.message}`, 'error');
                       }

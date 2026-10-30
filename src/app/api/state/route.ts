@@ -1,6 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { readState, updateState, getStorageStatus, deleteDocumentFile, isOrganizer } from '@/lib/storage';
-import { Expense, TripBudget, ActivityEvent, DocumentCategory } from '@/types';
+import {
+  hasSupabaseServerConfig,
+  getSupabaseServerClient,
+} from '@/lib/supabase/server';
+import {
+  verifySupabaseHealth,
+  readStateFromSupabase,
+  addExpenseInSupabase,
+  editExpenseInSupabase,
+  deleteExpenseInSupabase,
+  updateBudgetInSupabase,
+  updateDocumentInSupabase,
+  deleteDocumentMetadataInSupabase,
+  updateMembersInSupabase,
+  clearAllDataInSupabase,
+  DatabaseOperationError,
+} from '@/lib/supabase/store';
+import { getSupabaseEnvConfig } from '@/lib/supabase/config';
+import { Expense, TripBudget, ActivityEvent, DocumentCategory, StorageStatus } from '@/types';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,6 +31,59 @@ const NO_CACHE_HEADERS = {
 
 export async function GET() {
   try {
+    const isSupabase = hasSupabaseServerConfig();
+
+    if (isSupabase) {
+      // 1. Verify Supabase health — no silent fallback to local JSON!
+      const supabaseHealth = await verifySupabaseHealth();
+      if (!supabaseHealth.ok) {
+        const storageStatus: StorageStatus = {
+          connected: false,
+          status: supabaseHealth.status,
+          code: supabaseHealth.code,
+          message: supabaseHealth.message,
+          provider: 'supabase',
+          stateExists: false,
+        };
+        return NextResponse.json(
+          {
+            success: false,
+            error: supabaseHealth.message,
+            storage: storageStatus,
+          },
+          { status: supabaseHealth.code === 'CREDENTIALS_MISSING' ? 503 : 500, headers: NO_CACHE_HEADERS }
+        );
+      }
+
+      // 2. Read authoritative state from Supabase PostgreSQL
+      const state = await readStateFromSupabase();
+      const envConfig = getSupabaseEnvConfig();
+
+      const storageStatus: StorageStatus = {
+        connected: true,
+        status: 'Connected to Supabase PostgreSQL',
+        code: 'CONNECTED',
+        message: 'Authoritative data backed by Supabase PostgreSQL database',
+        provider: 'supabase',
+        stateExists: true,
+      };
+
+      return NextResponse.json(
+        {
+          success: true,
+          data: state,
+          storage: storageStatus,
+          version: state.version,
+          realtime: {
+            supabaseUrl: envConfig.supabaseUrl,
+            enabled: Boolean(envConfig.anonKey || envConfig.supabaseUrl),
+          },
+        },
+        { headers: NO_CACHE_HEADERS }
+      );
+    }
+
+    // Offline / Local Development Fallback when Supabase env vars are not configured
     const status = await getStorageStatus();
     if (!status.connected) {
       return NextResponse.json(
@@ -26,17 +97,19 @@ export async function GET() {
     }
 
     const state = await readState();
-    return NextResponse.json({
-      success: true,
-      data: state,
-      storage: status,
-      version: state.version,
-    }, { headers: NO_CACHE_HEADERS });
+    return NextResponse.json(
+      {
+        success: true,
+        data: state,
+        storage: status,
+        version: state.version,
+      },
+      { headers: NO_CACHE_HEADERS }
+    );
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Failed to fetch trip state';
-    const status = await getStorageStatus().catch(() => null);
     return NextResponse.json(
-      { success: false, error: message, storage: status },
+      { success: false, error: message },
       { status: 500, headers: NO_CACHE_HEADERS }
     );
   }
@@ -63,6 +136,183 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    const isSupabase = hasSupabaseServerConfig();
+
+    // =========================================================================
+    // AUTHORITATIVE SUPABASE POSTGRESQL MUTATIONS
+    // =========================================================================
+    if (isSupabase) {
+      try {
+        switch (action) {
+          case 'UPDATE_BUDGET': {
+            const { total } = payload as { total: number };
+            const numTotal = Number(total);
+            if (isNaN(numTotal) || numTotal < 0) {
+              return NextResponse.json({ success: false, error: 'Valid budget amount is required' }, { status: 400 });
+            }
+            const updated = await updateBudgetInSupabase(numTotal, actor);
+            return NextResponse.json({ success: true, data: updated, version: updated.version }, { headers: NO_CACHE_HEADERS });
+          }
+
+          case 'ADD_EXPENSE': {
+            const exp = payload as Omit<Expense, 'id' | 'createdAt' | 'updatedAt'>;
+            const numAmount = Number(exp.amount);
+            if (isNaN(numAmount) || numAmount <= 0) {
+              return NextResponse.json({ success: false, error: 'Expense amount must be a positive number' }, { status: 400 });
+            }
+            if (!exp.purpose?.trim()) {
+              return NextResponse.json({ success: false, error: 'Expense purpose/description is required' }, { status: 400 });
+            }
+            if (!exp.paidBy?.trim()) {
+              return NextResponse.json({ success: false, error: 'Paid by is required' }, { status: 400 });
+            }
+
+            const id = `exp_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+            const updated = await addExpenseInSupabase(
+              {
+                id,
+                amount: numAmount,
+                purpose: exp.purpose.trim(),
+                category: exp.category || 'Others',
+                paidBy: exp.paidBy.trim(),
+                recordedBy: actor,
+                date: exp.date || new Date().toISOString(),
+                splitWith: exp.splitWith,
+                notes: exp.notes,
+              },
+              actor
+            );
+
+            return NextResponse.json({ success: true, data: updated, version: updated.version }, { headers: NO_CACHE_HEADERS });
+          }
+
+          case 'UPDATE_EXPENSE': {
+            const { id, ...updates } = payload as Partial<Expense> & { id: string };
+            if (!id) {
+              return NextResponse.json({ success: false, error: 'Expense ID is required' }, { status: 400 });
+            }
+            if (updates.amount !== undefined) {
+              const numAmount = Number(updates.amount);
+              if (isNaN(numAmount) || numAmount <= 0) {
+                return NextResponse.json({ success: false, error: 'Expense amount must be a positive number' }, { status: 400 });
+              }
+            }
+
+            const result = await editExpenseInSupabase(
+              id,
+              {
+                amount: updates.amount !== undefined ? Number(updates.amount) : undefined,
+                purpose: updates.purpose,
+                category: updates.category,
+                paidBy: updates.paidBy,
+                date: updates.date,
+                splitWith: updates.splitWith,
+                notes: updates.notes,
+              },
+              actor,
+              expectedVersion
+            );
+
+            if (result.conflict) {
+              return NextResponse.json(
+                {
+                  success: false,
+                  conflict: true,
+                  error: 'Expense record was updated by another member. Please refresh.',
+                  data: result.state,
+                  version: result.state.version,
+                },
+                { status: 409, headers: NO_CACHE_HEADERS }
+              );
+            }
+
+            return NextResponse.json({ success: true, data: result.state, version: result.state.version }, { headers: NO_CACHE_HEADERS });
+          }
+
+          case 'DELETE_EXPENSE': {
+            const { id } = payload as { id: string };
+            if (!id) {
+              return NextResponse.json({ success: false, error: 'Expense ID is required' }, { status: 400 });
+            }
+            const updated = await deleteExpenseInSupabase(id, actor);
+            return NextResponse.json({ success: true, data: updated, version: updated.version }, { headers: NO_CACHE_HEADERS });
+          }
+
+          case 'UPDATE_DOCUMENT': {
+            const { id, title, category } = payload as { id: string; title?: string; category?: DocumentCategory };
+            if (!id) {
+              return NextResponse.json({ success: false, error: 'Document ID is required' }, { status: 400 });
+            }
+            const updated = await updateDocumentInSupabase(id, { title, category }, actor);
+            return NextResponse.json({ success: true, data: updated, version: updated.version }, { headers: NO_CACHE_HEADERS });
+          }
+
+          case 'DELETE_DOCUMENT': {
+            const { id } = payload as { id: string };
+            if (!id) {
+              return NextResponse.json({ success: false, error: 'Document ID is required' }, { status: 400 });
+            }
+
+            // Retrieve document file URL for Blob cleanup
+            const supabase = getSupabaseServerClient();
+            const { data: doc } = await supabase.from('documents').select('file_url').eq('id', id).maybeSingle();
+
+            if (doc?.file_url) {
+              deleteDocumentFile(doc.file_url).catch((err) => {
+                console.error('Failed to clean up blob file:', err);
+              });
+            }
+
+            const updated = await deleteDocumentMetadataInSupabase(id, actor);
+            return NextResponse.json({ success: true, data: updated, version: updated.version }, { headers: NO_CACHE_HEADERS });
+          }
+
+          case 'UPDATE_MEMBERS': {
+            const { members } = payload as { members: string[] };
+            if (!Array.isArray(members) || members.length === 0) {
+              return NextResponse.json({ success: false, error: 'Valid members list is required' }, { status: 400 });
+            }
+            const cleanMembers = Array.from(new Set(members.map((m) => m.trim()).filter(Boolean)));
+            const updated = await updateMembersInSupabase(cleanMembers, actor);
+            return NextResponse.json({ success: true, data: updated, version: updated.version }, { headers: NO_CACHE_HEADERS });
+          }
+
+          case 'CLEAR_ALL_DATA': {
+            const options = payload || {};
+            // Retrieve all document file URLs to clean up blob storage
+            const supabase = getSupabaseServerClient();
+            const { data: allDocs } = await supabase.from('documents').select('file_url').eq('is_deleted', false);
+            if (allDocs) {
+              for (const d of allDocs) {
+                if (d.file_url) {
+                  deleteDocumentFile(d.file_url).catch((err) => {
+                    console.error('Failed to clean up blob file on clear all:', err);
+                  });
+                }
+              }
+            }
+
+            const updated = await clearAllDataInSupabase(options, actor);
+            return NextResponse.json({ success: true, data: updated, version: updated.version }, { headers: NO_CACHE_HEADERS });
+          }
+
+          default:
+            return NextResponse.json({ success: false, error: `Unsupported action: ${action}` }, { status: 400 });
+        }
+      } catch (err: unknown) {
+        const msg = err instanceof DatabaseOperationError ? err.message : err instanceof Error ? err.message : 'Database error';
+        console.error('Authoritative Supabase database mutation error:', err);
+        // Explicitly report database error — never silently pretend success or fallback to local JSON!
+        return NextResponse.json(
+          { success: false, error: `Supabase database error: ${msg}` },
+          { status: 500, headers: NO_CACHE_HEADERS }
+        );
+      }
+    }
+
+    // =========================================================================
+    // OFFLINE DEVELOPMENT / FALLBACK MUTATIONS
+    // =========================================================================
     const result = await updateState((current) => {
       const now = new Date().toISOString();
       const updated = { ...current };
@@ -97,7 +347,9 @@ export async function POST(req: NextRequest) {
             details: {
               oldValue: wasConfigured ? `₹${oldBudget.toLocaleString('en-IN')}` : 'Not set',
               newValue: `₹${numTotal.toLocaleString('en-IN')}`,
-              description: wasConfigured ? `Changed budget to ₹${numTotal.toLocaleString('en-IN')}` : `Configured initial budget to ₹${numTotal.toLocaleString('en-IN')}`,
+              description: wasConfigured
+                ? `Changed budget to ₹${numTotal.toLocaleString('en-IN')}`
+                : `Configured initial budget to ₹${numTotal.toLocaleString('en-IN')}`,
             },
           };
 
@@ -147,7 +399,6 @@ export async function POST(req: NextRequest) {
             },
           };
 
-          // Also ensure payer is in members list if not already
           if (!updated.members.includes(newExpense.paidBy)) {
             updated.members = [...updated.members, newExpense.paidBy];
           }
@@ -272,7 +523,6 @@ export async function POST(req: NextRequest) {
             throw new Error('Document not found');
           }
 
-          // Asynchronously trigger blob deletion in background
           deleteDocumentFile(doc.fileUrl).catch((err) => {
             console.error('Failed to delete document file:', err);
           });
@@ -317,7 +567,6 @@ export async function POST(req: NextRequest) {
             wipeEverything?: boolean;
           };
 
-          // Clean up any uploaded document files in blob storage
           for (const doc of updated.documents) {
             if (doc.fileUrl) {
               deleteDocumentFile(doc.fileUrl).catch((err) => {
@@ -389,4 +638,3 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: false, error: message }, { status: 500, headers: NO_CACHE_HEADERS });
   }
 }
-
