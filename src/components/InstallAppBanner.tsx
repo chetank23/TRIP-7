@@ -44,7 +44,7 @@ export function InstallAppBanner() {
 
   return (
     <>
-      <div className="w-full bg-gradient-to-r from-[#FFF5F1] to-[#FFFBF8] border border-[#FDE5DC] rounded-3xl p-3.5 sm:p-4 shadow-sm flex items-center justify-between gap-3 animate-in fade-in duration-300">
+      <div className="bvc-glass-surface w-full bg-gradient-to-r from-white/90 to-[#FFF8F3]/90 border border-white/80 rounded-3xl p-3.5 sm:p-4 shadow-card flex items-center justify-between gap-3 animate-in fade-in duration-300">
         <div className="flex items-center space-x-3 min-w-0 flex-1">
           <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-bvc-red to-[#FFC49B] p-0.5 shadow-sm shrink-0 flex items-center justify-center">
             <img
