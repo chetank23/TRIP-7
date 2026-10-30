@@ -95,3 +95,15 @@ body {
   padding-top: env(safe-area-inset-top, 16px);
 }
 
+
+/*
+ * Device-safe sticky header.
+ * Keeps the status-bar/camera-cutout area visually continuous with the navbar
+ * and respects left/right insets on landscape and edge-to-edge devices.
+ */
+.app-header-safe-area {
+  padding-top: calc(env(safe-area-inset-top, 0px) + 0.875rem);
+  padding-right: max(env(safe-area-inset-right, 0px), 0.875rem);
+  padding-bottom: 0.875rem;
+  padding-left: max(env(safe-area-inset-left, 0px), 0.875rem);
+}
