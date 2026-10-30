@@ -61,10 +61,9 @@ export default function DocumentsPage() {
   const [deletingDoc, setDeletingDoc] = useState<TripDocument | null>(null);
   const [isDeleting, setIsDeleting] = useState<boolean>(false);
 
-  const documents = state?.documents || [];
-
   // Filter documents
   const filteredDocuments = useMemo(() => {
+    const documents = state?.documents || [];
     return documents.filter((doc) => {
       if (selectedCategory !== 'All' && doc.category !== selectedCategory) {
         return false;
@@ -79,7 +78,7 @@ export default function DocumentsPage() {
       }
       return true;
     });
-  }, [documents, selectedCategory, searchQuery]);
+  }, [state?.documents, selectedCategory, searchQuery]);
 
   // Handle file select
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {

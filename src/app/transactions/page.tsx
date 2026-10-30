@@ -95,10 +95,9 @@ function TransactionsContent() {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
 
-  const expenses = state?.expenses || [];
-
   // Filter and search
   const filteredExpenses = useMemo(() => {
+    const expenses = state?.expenses || [];
     return expenses.filter((exp) => {
       // Category filter
       if (selectedCategory !== 'All' && exp.category !== selectedCategory) {
@@ -114,7 +113,7 @@ function TransactionsContent() {
       }
       return true;
     });
-  }, [expenses, selectedCategory, searchQuery]);
+  }, [state?.expenses, selectedCategory, searchQuery]);
 
   // Group by date
   const groupedExpenses = useMemo(() => {

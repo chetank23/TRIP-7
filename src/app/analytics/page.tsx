@@ -37,10 +37,9 @@ export default function AnalyticsPage() {
   const { state, totalSpent, categorySpending, spentPercentage } = useTrip();
   const [timeRange, setTimeRange] = useState<'30' | '7' | 'all'>('30');
 
-  const expenses = state?.expenses || [];
-
   // Filter expenses by selected time range
   const filteredExpenses = useMemo(() => {
+    const expenses = state?.expenses || [];
     if (timeRange === 'all') return expenses;
     const days = timeRange === '7' ? 7 : 30;
     const cutoff = new Date();
@@ -54,7 +53,7 @@ export default function AnalyticsPage() {
         return true;
       }
     });
-  }, [expenses, timeRange]);
+  }, [state?.expenses, timeRange]);
 
   // Recalculate totals for active range
   const rangeTotal = useMemo(() => {

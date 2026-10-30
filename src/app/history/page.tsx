@@ -119,9 +119,8 @@ export default function HistoryPage() {
   const { state } = useTrip();
   const [filter, setFilter] = useState<FilterType>('all');
 
-  const activities = state?.activities || [];
-
   const filteredActivities = useMemo(() => {
+    const activities = state?.activities || [];
     return activities.filter((act) => {
       if (filter === 'expenses') {
         return (
@@ -142,7 +141,7 @@ export default function HistoryPage() {
       }
       return true;
     });
-  }, [activities, filter]);
+  }, [state?.activities, filter]);
 
   return (
     <div className="min-h-screen bg-bvc-bg pb-28">

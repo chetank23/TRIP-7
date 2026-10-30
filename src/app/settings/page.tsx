@@ -329,28 +329,30 @@ export default function SettingsPage() {
               </div>
             </button>
 
-            {/* Storage Status */}
-            <div className="px-5 py-3.5">
-              <div className="flex items-center justify-between mb-1.5">
+            {/* Active Database & Storage Status */}
+            <div className="px-5 py-4 space-y-3">
+              <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
-                  <div className="w-9 h-9 rounded-xl bg-cream-100 text-bvc-secondary flex items-center justify-center">
-                    <Database className="w-4 h-4" />
+                  <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-100 shrink-0">
+                    <Database className="w-5 h-5 stroke-[2.2]" />
                   </div>
                   <div>
-                    <span className="text-xs font-bold text-bvc-text block">
-                      {storageStatus?.provider === 'supabase' ? 'Supabase Database & Blob' : 'Vercel Blob Storage'}
+                    <span className="text-xs font-extrabold text-bvc-text block">
+                      Active Database: Supabase PostgreSQL
                     </span>
-                    <span className="text-[10px] text-bvc-secondary">
-                      {storageStatus?.message || 'Connecting to database & blob store...'}
+                    <span className="text-[11px] font-medium text-emerald-700 block mt-0.5">
+                      {storageStatus?.connected
+                        ? 'Connected & Authoritative (Blob-Independent)'
+                        : storageStatus?.message || 'Connecting to database...'}
                     </span>
                   </div>
                 </div>
 
                 <div className="flex items-center space-x-1.5 shrink-0 pl-2">
                   <span
-                    className={`w-2 h-2 rounded-full ${
+                    className={`w-2.5 h-2.5 rounded-full ${
                       storageStatus?.connected
-                        ? 'bg-bvc-success animate-pulse'
+                        ? 'bg-emerald-500 animate-pulse'
                         : storageStatus?.code === 'STATE_NOT_INITIALIZED'
                         ? 'bg-amber-500'
                         : 'bg-bvc-error'
@@ -359,21 +361,46 @@ export default function SettingsPage() {
                   <span
                     className={`text-xs font-bold ${
                       storageStatus?.connected
-                        ? 'text-bvc-success'
+                        ? 'text-emerald-700'
                         : storageStatus?.code === 'STATE_NOT_INITIALIZED'
                         ? 'text-amber-600'
                         : 'text-bvc-error'
                     }`}
                   >
-                    {storageStatus?.status || (storageStatus?.connected ? 'Connected' : 'Disconnected')}
+                    {storageStatus?.connected ? 'PostgreSQL Active' : 'Disconnected'}
                   </span>
                 </div>
               </div>
 
+              {/* Architecture Badges & Blob-Decoupled Guarantee */}
+              <div className="bg-cream-50/80 rounded-2xl p-3 border border-cream-200 space-y-1.5">
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className="text-bvc-secondary font-medium">Storage Engine:</span>
+                  <span className="font-bold text-bvc-text">Supabase PostgreSQL 15+</span>
+                </div>
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className="text-bvc-secondary font-medium">Transactions & Budget:</span>
+                  <span className="font-bold text-emerald-700">PostgreSQL Relational Tables</span>
+                </div>
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className="text-bvc-secondary font-medium">Audit History:</span>
+                  <span className="font-bold text-emerald-700">Permanent activities Table</span>
+                </div>
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className="text-bvc-secondary font-medium">PDF Documents:</span>
+                  <span className="font-bold text-emerald-700">PostgreSQL BYTEA (Blob-Independent)</span>
+                </div>
+                <div className="pt-1.5 border-t border-cream-200/80">
+                  <p className="text-[10px] text-bvc-muted leading-relaxed">
+                    🛡️ <strong className="text-bvc-text">Blob Independence Guarantee:</strong> Even if Vercel Blob storage is full, quota-exhausted, or not connected, all transaction records, budget updates, expenses, audit trails, and PDF booking files persist directly to PostgreSQL. Every function continues to work seamlessly.
+                  </p>
+                </div>
+              </div>
+
               {/* Diagnostic Trigger Button */}
-              <div className="mt-2 pt-2 border-t border-cream-200 flex items-center justify-between">
+              <div className="pt-1 flex items-center justify-between">
                 <span className="text-[10px] text-bvc-muted">
-                  {storageStatus?.connected ? 'Store Verified & Active' : 'Configure BVC_ and BLOB_ tokens in Vercel'}
+                  {storageStatus?.connected ? 'Authoritative Database Verified' : 'Check Supabase environment configuration'}
                 </span>
                 <button
                   type="button"
@@ -382,18 +409,18 @@ export default function SettingsPage() {
                       const res = await fetch('/api/storage/health');
                       const json = await res.json();
                       if (json.ok) {
-                        showToast('Database & Storage health check verified: All services active!', 'success');
+                        showToast('Database Verified: Supabase PostgreSQL is active & handling all data!', 'success');
                       } else {
-                        showToast(`Storage Status: ${json.status}. ${json.message}`, 'error');
+                        showToast(`Database Status: ${json.status}. ${json.message}`, 'error');
                       }
                       refreshState();
                     } catch {
-                      showToast('Health check failed to execute', 'error');
+                      showToast('Database health check failed to execute', 'error');
                     }
                   }}
                   className="text-[11px] font-bold text-bvc-red hover:underline"
                 >
-                  Run Storage Health Check →
+                  Run Database Health Check →
                 </button>
               </div>
             </div>

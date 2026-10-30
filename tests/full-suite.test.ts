@@ -519,14 +519,71 @@ async function runTestSuite() {
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
+      const act = {
+        id: `act_${Date.now()}`,
+        action: 'expense_created' as const,
+        actor: 'Harshitha',
+        targetId: blobFreeExpId,
+        targetTitle: 'Local Fresh Coconut Water',
+        amount: 320,
+        timestamp: new Date().toISOString(),
+        details: { description: 'Added Local Fresh Coconut Water (₹320)' },
+      };
       return {
         ...curr,
         expenses: [exp, ...curr.expenses],
+        activities: [act, ...curr.activities],
       };
     });
     assert(!addRes.conflict, 'Adding expense must succeed without Blob token');
 
-    // 3. Document retrieval from local storage fallback must succeed
+    // 3. Editing an expense must still succeed
+    const editRes = await updateState((curr) => {
+      return {
+        ...curr,
+        expenses: curr.expenses.map((e) => e.id === blobFreeExpId ? { ...e, amount: 350 } : e),
+        activities: [
+          {
+            id: `act_edit_${Date.now()}`,
+            action: 'expense_updated' as const,
+            actor: 'Harshitha',
+            targetId: blobFreeExpId,
+            targetTitle: 'Local Fresh Coconut Water',
+            amount: 350,
+            timestamp: new Date().toISOString(),
+            details: { oldValue: '₹320', newValue: '₹350' },
+          },
+          ...curr.activities,
+        ],
+      };
+    });
+    assert(!editRes.conflict, 'Editing expense must succeed without Blob token');
+    const editedExp = editRes.state.expenses.find((e) => e.id === blobFreeExpId);
+    assert.strictEqual(editedExp?.amount, 350, 'Updated expense amount must persist');
+
+    // 4. Deleting an expense must preserve historical audit record
+    const deleteRes = await updateState((curr) => {
+      return {
+        ...curr,
+        expenses: curr.expenses.filter((e) => e.id !== blobFreeExpId),
+        activities: [
+          {
+            id: `act_del_${Date.now()}`,
+            action: 'expense_deleted' as const,
+            actor: 'Harshitha',
+            targetId: blobFreeExpId,
+            targetTitle: 'Local Fresh Coconut Water',
+            timestamp: new Date().toISOString(),
+            details: { oldValue: '₹350', description: 'Deleted Local Fresh Coconut Water' },
+          },
+          ...curr.activities,
+        ],
+      };
+    });
+    assert(!deleteRes.conflict, 'Deleting expense must succeed without Blob token');
+    assert(deleteRes.state.activities.some((a) => a.targetId === blobFreeExpId), 'Audit trail must be permanently preserved');
+
+    // 5. Document retrieval from local storage fallback must succeed
     const testDocId = 'doc_sync_1793304757848';
     const docLookup = await storeModule.getDocumentFromDatabase(testDocId);
     if (docLookup) {

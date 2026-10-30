@@ -152,6 +152,7 @@ export function TripProvider({ children }: { children: React.ReactNode }) {
   const lastVersionRef = useRef<number>(0);
   const realtimeClientRef = useRef<ReturnType<typeof getSupabaseBrowserClient>>(null);
   const realtimeChannelRef = useRef<any>(null);
+  const fetchStateRef = useRef<(isBackground?: boolean) => Promise<void>>(() => Promise.resolve());
 
   // Setup Supabase Realtime for instant cross-browser synchronization
   const setupRealtime = useCallback((customUrl?: string) => {
@@ -165,16 +166,16 @@ export function TripProvider({ children }: { children: React.ReactNode }) {
       const channel = client
         .channel('bvc_shared_trip_realtime')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'expenses' }, () => {
-          fetchState(true);
+          fetchStateRef.current(true);
         })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'trip_config' }, () => {
-          fetchState(true);
+          fetchStateRef.current(true);
         })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'activities' }, () => {
-          fetchState(true);
+          fetchStateRef.current(true);
         })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'documents' }, () => {
-          fetchState(true);
+          fetchStateRef.current(true);
         })
         .subscribe();
 
@@ -249,6 +250,8 @@ export function TripProvider({ children }: { children: React.ReactNode }) {
       setIsSyncing(false);
     }
   }, [setupRealtime]);
+
+  fetchStateRef.current = fetchState;
 
   // Automated shared data synchronization (30s polling while active in page, with Page Visibility & Reconnect handling)
   useEffect(() => {
