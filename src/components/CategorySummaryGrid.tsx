@@ -44,7 +44,7 @@ export function CategorySummaryGrid() {
             <Link
               key={cat.key}
               href={`/transactions?category=${encodeURIComponent(cat.key)}`}
-              className="bvc-glass-surface bg-white/85 rounded-2xl p-3 border border-white/85 shadow-card hover:shadow-floating hover:-translate-y-0.5 active:translate-y-0 transition-all flex flex-col items-center text-center group"
+              className="bg-white rounded-2xl p-3 border border-cream-300 shadow-sm hover:shadow-card hover:-translate-y-0.5 active:translate-y-0 transition-all flex flex-col items-center text-center group"
             >
               <div
                 className="w-10 h-10 rounded-2xl flex items-center justify-center mb-2 transition-transform group-hover:scale-105"
