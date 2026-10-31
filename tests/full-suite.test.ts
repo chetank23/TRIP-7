@@ -658,6 +658,16 @@ async function runTestSuite() {
   assert(chatApiSource.includes('resolveTripMember'), 'Chat API must validate the selected profile against trip members');
   assert(chatApiSource.includes(".from('chat_messages')"), 'Chat API must persist messages in PostgreSQL');
   assert(chatApiSource.includes('MAX_MESSAGE_LENGTH = 2000'), 'Chat API must enforce the message length limit');
+  assert(chatApiSource.includes('export async function PATCH'), 'Chat API must support editing messages');
+  assert(chatApiSource.includes('export async function DELETE'), 'Chat API must support deleting messages');
+
+  const chatEditMigrationPath = path.join(
+    process.cwd(),
+    'supabase/migrations/20261031010000_bvc_trip_chat_message_edits.sql'
+  );
+  assert(fs.existsSync(chatEditMigrationPath), 'Chat message edit timestamp migration must exist');
+  const chatEditMigrationSource = fs.readFileSync(chatEditMigrationPath, 'utf-8');
+  assert(chatEditMigrationSource.includes('ADD COLUMN IF NOT EXISTS edited_at TIMESTAMPTZ'), 'Chat edit migration must add an idempotent edited_at timestamp');
 
   const chatPageSource = fs.readFileSync(
     path.join(process.cwd(), 'src/app/chat/page.tsx'),
@@ -677,6 +687,11 @@ async function runTestSuite() {
   assert(chatPageSource.includes('typingMembers.length > 0'), 'Chat UI must support multiple simultaneous typers');
   assert(chatPageSource.includes('findProfileByName'), 'Chat avatars must use the existing member profile photos');
   assert(chatPageSource.includes('/api/chat/messages'), 'Chat UI must use the server message API');
+  assert(chatPageSource.includes('beginMessageLongPress'), 'Own messages must expose actions through a press-and-hold gesture');
+  assert(chatPageSource.includes("method: 'PATCH'"), 'Chat UI must send edited messages to the API');
+  assert(chatPageSource.includes("method: 'DELETE'"), 'Chat UI must send deletion requests to the API');
+  assert(chatPageSource.includes('message.edited_at'), 'Edited messages must show an Edited marker');
+  assert(chatPageSource.includes("event: 'message-changed'"), 'Chat clients must refresh after message edits and deletions');
 
   const headerSource = fs.readFileSync(
     path.join(process.cwd(), 'src/components/Header.tsx'),

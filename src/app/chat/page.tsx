@@ -10,7 +10,7 @@ import React, {
   useState,
 } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowDown, Loader2, MessageCircle, Send } from 'lucide-react';
+import { ArrowDown, Check, Loader2, MessageCircle, Pencil, Send, Trash2, X } from 'lucide-react';
 import { findProfileByName } from '@/lib/profiles';
 import { Header } from '@/components/Header';
 import { useTrip } from '@/lib/trip-context';
@@ -22,6 +22,7 @@ interface ChatMessage {
   sender: string;
   content: string;
   created_at: string;
+  edited_at?: string | null;
 }
 
 const PAGE_SIZE = 50;
@@ -71,8 +72,15 @@ export default function ChatPage() {
   const [seenByMessage, setSeenByMessage] = useState<Record<string, Array<{ reader: string; readAt: string }>>>({});
   const [expandedReceiptMessageId, setExpandedReceiptMessageId] = useState<string | null>(null);
   const [isRealtimeConnected, setIsRealtimeConnected] = useState(false);
+  const [actionMenuMessageId, setActionMenuMessageId] = useState<string | null>(null);
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+  const [editDraft, setEditDraft] = useState('');
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
+  const [deletingMessageId, setDeletingMessageId] = useState<string | null>(null);
 
   const channelRef = useRef<any>(null);
+  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressStartRef = useRef<{ x: number; y: number } | null>(null);
   const typingTimeoutsRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
   const seenMessagesSentRef = useRef<Set<string>>(new Set());
   const lastTypingSentAtRef = useRef(0);
@@ -115,7 +123,7 @@ export default function ChatPage() {
       setMessages((previous) => {
         if (!prepend && previous.length <= PAGE_SIZE) return incoming;
         const merged = new Map<string, ChatMessage>();
-        [...incoming, ...previous].forEach((message) => merged.set(message.id, message));
+        [...previous, ...incoming].forEach((message) => merged.set(message.id, message));
         return Array.from(merged.values()).sort(
           (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
         );
@@ -157,6 +165,15 @@ export default function ChatPage() {
       channel = client
         .channel('bvc-trip-group-chat')
         .on('broadcast', { event: 'message-created' }, () => {
+          shouldStickToBottomRef.current =
+            !listRef.current ||
+            listRef.current.scrollHeight - listRef.current.scrollTop - listRef.current.clientHeight < 120;
+          void fetchMessages();
+        })
+        .on('broadcast', { event: 'message-changed' }, ({ payload }: { payload?: { id?: string; action?: 'updated' | 'deleted' } }) => {
+          if (payload?.action === 'deleted' && payload.id) {
+            setMessages((current) => current.filter((message) => message.id !== payload.id));
+          }
           shouldStickToBottomRef.current =
             !listRef.current ||
             listRef.current.scrollHeight - listRef.current.scrollTop - listRef.current.clientHeight < 120;
@@ -225,6 +242,7 @@ export default function ChatPage() {
 
     return () => {
       window.clearInterval(poll);
+      clearLongPressTimer();
       typingTimeoutsRef.current.forEach((timeout) => clearTimeout(timeout));
       typingTimeoutsRef.current.clear();
       if (client && channel) {
@@ -354,6 +372,131 @@ export default function ChatPage() {
     }
   };
 
+  const clearLongPressTimer = () => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  };
+
+  const beginMessageLongPress = (message: ChatMessage, event: React.PointerEvent<HTMLDivElement>) => {
+    if (message.sender.toLocaleLowerCase('en-IN') !== (currentMember || userName || '').toLocaleLowerCase('en-IN')) return;
+    clearLongPressTimer();
+    longPressStartRef.current = { x: event.clientX, y: event.clientY };
+    longPressTimerRef.current = setTimeout(() => {
+      setActionMenuMessageId(message.id);
+      longPressTimerRef.current = null;
+    }, 500);
+  };
+
+  const moveMessageLongPress = (event: React.PointerEvent<HTMLDivElement>) => {
+    const start = longPressStartRef.current;
+    if (!start) return;
+    if (Math.abs(event.clientX - start.x) > 12 || Math.abs(event.clientY - start.y) > 12) {
+      clearLongPressTimer();
+      longPressStartRef.current = null;
+    }
+  };
+
+  const endMessageLongPress = () => {
+    clearLongPressTimer();
+    longPressStartRef.current = null;
+  };
+
+  const openMessageActions = (event: React.MouseEvent<HTMLDivElement>, message: ChatMessage) => {
+    if (message.sender.toLocaleLowerCase('en-IN') !== (currentMember || userName || '').toLocaleLowerCase('en-IN')) return;
+    event.preventDefault();
+    clearLongPressTimer();
+    setActionMenuMessageId(message.id);
+  };
+
+  const broadcastMessageChange = (id: string, action: 'updated' | 'deleted') => {
+    if (!channelRef.current) return;
+    void channelRef.current.send({
+      type: 'broadcast',
+      event: 'message-changed',
+      payload: { id, action },
+    }).catch(() => undefined);
+  };
+
+  const saveEditedMessage = async (message: ChatMessage) => {
+    const content = editDraft.trim();
+    if (!content) {
+      setError('A message cannot be empty.');
+      return;
+    }
+    if (content.length > MAX_MESSAGE_LENGTH) {
+      setError(`Messages can contain up to ${MAX_MESSAGE_LENGTH} characters.`);
+      return;
+    }
+    if (!userName || isSavingEdit) return;
+
+    setIsSavingEdit(true);
+    setError(null);
+    try {
+      const response = await fetch('/api/chat/messages', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: message.id, sender: userName, content }),
+      });
+      const result = await response.json();
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || 'Unable to edit this message');
+      }
+
+      const updated = result.message as ChatMessage;
+      setMessages((current) => current.map((item) => item.id === updated.id ? updated : item));
+      setEditingMessageId(null);
+      setActionMenuMessageId(null);
+      setEditDraft('');
+      broadcastMessageChange(message.id, 'updated');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Unable to edit this message');
+    } finally {
+      setIsSavingEdit(false);
+    }
+  };
+
+  const deleteMessage = async (message: ChatMessage) => {
+    if (!userName || deletingMessageId) return;
+    const confirmed = window.confirm('Delete this message for everyone? This cannot be undone.');
+    if (!confirmed) {
+      setActionMenuMessageId(null);
+      return;
+    }
+
+    setDeletingMessageId(message.id);
+    setError(null);
+    try {
+      const response = await fetch('/api/chat/messages', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: message.id, sender: userName }),
+      });
+      const result = await response.json();
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || 'Unable to delete this message');
+      }
+
+      setMessages((current) => current.filter((item) => item.id !== message.id));
+      setSeenByMessage((current) => {
+        const next = { ...current };
+        delete next[message.id];
+        return next;
+      });
+      setActionMenuMessageId(null);
+      if (editingMessageId === message.id) {
+        setEditingMessageId(null);
+        setEditDraft('');
+      }
+      broadcastMessageChange(message.id, 'deleted');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Unable to delete this message');
+    } finally {
+      setDeletingMessageId(null);
+    }
+  };
+
   const handleComposerKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault();
@@ -479,6 +622,13 @@ export default function ChatPage() {
                     className={`flex flex-col ${isOwn ? 'items-end' : 'items-start'}`}
                     data-chat-message-id={message.id}
                     data-chat-message-sender={message.sender}
+                    onPointerDown={isOwn && editingMessageId !== message.id ? (event) => beginMessageLongPress(message, event) : undefined}
+                    onPointerMove={isOwn && editingMessageId !== message.id ? moveMessageLongPress : undefined}
+                    onPointerUp={isOwn ? endMessageLongPress : undefined}
+                    onPointerLeave={isOwn ? endMessageLongPress : undefined}
+                    onPointerCancel={isOwn ? endMessageLongPress : undefined}
+                    onContextMenu={isOwn ? (event) => openMessageActions(event, message) : undefined}
+                    style={isOwn && editingMessageId !== message.id ? { touchAction: 'pan-y' } : undefined}
                   >
                     <div
                       className={`max-w-[84%] rounded-2xl px-3.5 py-2.5 shadow-sm ${isOwn
@@ -489,11 +639,86 @@ export default function ChatPage() {
                       {showSender && (
                         <p className="mb-1 text-[10px] font-extrabold text-bvc-red">{message.sender}</p>
                       )}
-                      <p className="whitespace-pre-wrap break-words text-[13px] leading-relaxed">{message.content}</p>
+                      {editingMessageId === message.id ? (
+                        <div className="min-w-[220px] space-y-2" onPointerDown={(event) => event.stopPropagation()}>
+                          <textarea
+                            autoFocus
+                            value={editDraft}
+                            onChange={(event) => setEditDraft(event.target.value)}
+                            maxLength={MAX_MESSAGE_LENGTH}
+                            rows={Math.min(4, Math.max(2, editDraft.split('\\n').length))}
+                            aria-label="Edit message"
+                            className="max-h-32 min-h-16 w-full resize-y rounded-lg border border-white/40 bg-white/15 p-2 text-[13px] leading-relaxed text-white outline-none placeholder:text-white/70"
+                          />
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditingMessageId(null);
+                                setEditDraft('');
+                                setError(null);
+                              }}
+                              disabled={isSavingEdit}
+                              className="inline-flex items-center gap-1 rounded-full bg-white/15 px-2.5 py-1.5 text-[10px] font-semibold text-white disabled:opacity-50"
+                            >
+                              <X className="h-3 w-3" /> Cancel
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => void saveEditedMessage(message)}
+                              disabled={isSavingEdit || !editDraft.trim() || editDraft.trim() === message.content}
+                              className="inline-flex items-center gap-1 rounded-full bg-white px-2.5 py-1.5 text-[10px] font-bold text-bvc-red disabled:opacity-50"
+                            >
+                              {isSavingEdit ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
+                              Save
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          <p className="whitespace-pre-wrap break-words text-[13px] leading-relaxed">{message.content}</p>
+                          {message.edited_at && (
+                            <p className="mt-0.5 text-right text-[9px] text-white/70">Edited</p>
+                          )}
+                        </>
+                      )}
                       <div className={`mt-1 text-right text-[9px] ${isOwn ? 'text-white/70' : 'text-bvc-muted'}`}>
                         {formatMessageTime(message.created_at)}
                       </div>
                     </div>
+                    {isOwn && actionMenuMessageId === message.id && editingMessageId !== message.id && (
+                      <div
+                        role="menu"
+                        aria-label="Message actions"
+                        className="relative z-20 mt-2 flex items-center gap-1 rounded-xl border border-cream-300 bg-white p-1.5 shadow-lg"
+                        onPointerDown={(event) => event.stopPropagation()}
+                      >
+                        <button
+                          type="button"
+                          role="menuitem"
+                          onClick={() => {
+                            setEditDraft(message.content);
+                            setEditingMessageId(message.id);
+                            setActionMenuMessageId(null);
+                          }}
+                          className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold text-bvc-text transition-colors hover:bg-cream-100"
+                        >
+                          <Pencil className="h-3.5 w-3.5 text-bvc-red" /> Edit
+                        </button>
+                        <button
+                          type="button"
+                          role="menuitem"
+                          onClick={() => void deleteMessage(message)}
+                          disabled={deletingMessageId === message.id}
+                          className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold text-bvc-red transition-colors hover:bg-red-50 disabled:opacity-50"
+                        >
+                          {deletingMessageId === message.id
+                            ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            : <Trash2 className="h-3.5 w-3.5" />}
+                          Delete
+                        </button>
+                      </div>
+                    )}
                     {isOwn && (seenByMessage[message.id]?.length || 0) > 0 && (
                       <div className="relative mt-1 flex flex-col items-end pr-1">
                         <button
