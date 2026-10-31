@@ -665,6 +665,17 @@ async function runTestSuite() {
   );
   assert(chatPageSource.includes("event: 'message-created'"), 'Chat clients must subscribe to realtime message broadcasts');
   assert(chatPageSource.includes("event: 'typing'"), 'Chat clients must support typing indicators');
+  assert(chatPageSource.includes("event: 'typing-stop'"), 'Chat clients must clear typing indicators when members stop typing');
+  assert(chatPageSource.includes("event: 'message-seen'"), 'Chat clients must exchange live read receipts');
+  assert(chatPageSource.includes("event: 'presence'"), 'Chat clients must track online members with Presence');
+  assert(chatPageSource.includes('channel.track('), 'Chat clients must publish online chat presence');
+  assert(chatPageSource.includes('IntersectionObserver'), 'Read receipts must be sent only when a message is visible');
+  assert(chatPageSource.includes('seenByMessage[message.id]'), 'Sent messages must show reader avatars');
+  assert(chatPageSource.includes('expandedReceiptMessageId'), 'Reader avatar stacks must open a list of names and read times');
+  assert(chatPageSource.includes('onlineMembers.slice(0, 6)'), 'The chat header must show the online member avatar stack');
+  assert(chatPageSource.includes('member: currentMember, page: ' + "'chat'"), 'Presence state must identify the active chat profile');
+  assert(chatPageSource.includes('typingMembers.length > 0'), 'Chat UI must support multiple simultaneous typers');
+  assert(chatPageSource.includes('findProfileByName'), 'Chat avatars must use the existing member profile photos');
   assert(chatPageSource.includes('/api/chat/messages'), 'Chat UI must use the server message API');
 
   const headerSource = fs.readFileSync(
