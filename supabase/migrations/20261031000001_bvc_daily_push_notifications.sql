@@ -17,7 +17,7 @@ CREATE INDEX IF NOT EXISTS idx_push_subscriptions_enabled
   ON public.push_subscriptions (enabled, member);
 
 ALTER TABLE public.push_subscriptions ENABLE ROW LEVEL SECURITY;
-REVOKE ALL ON TABLE public.push_subscriptions FROM anon, authenticated;
+REVOKE ALL ON TABLE public.push_subscriptions FROM PUBLIC, anon, authenticated;
 GRANT ALL ON TABLE public.push_subscriptions TO service_role;
 
 CREATE TABLE IF NOT EXISTS public.push_notification_runs (
@@ -31,5 +31,5 @@ CREATE TABLE IF NOT EXISTS public.push_notification_runs (
 );
 
 ALTER TABLE public.push_notification_runs ENABLE ROW LEVEL SECURITY;
-REVOKE ALL ON TABLE public.push_notification_runs FROM anon, authenticated;
+REVOKE ALL ON TABLE public.push_notification_runs FROM PUBLIC, anon, authenticated;
 GRANT ALL ON TABLE public.push_notification_runs TO service_role;
