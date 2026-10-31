@@ -52,7 +52,11 @@ export async function GET(request: NextRequest) {
     }
 
     const before = request.nextUrl.searchParams.get('before');
-    if (before && Number.isNaN(Date.parse(before))) {
+    const after = request.nextUrl.searchParams.get('after');
+    if (before && after) {
+      return json({ success: false, error: 'Use either the before or after message cursor.' }, 400);
+    }
+    if ((before && Number.isNaN(Date.parse(before))) || (after && Number.isNaN(Date.parse(after)))) {
       return json({ success: false, error: 'Invalid message history cursor.' }, 400);
     }
 
@@ -66,6 +70,9 @@ export async function GET(request: NextRequest) {
 
     if (before) {
       query = query.lt('created_at', before);
+    }
+    if (after) {
+      query = query.gt('created_at', after);
     }
 
     const { data, error } = await query;

@@ -672,8 +672,20 @@ async function runTestSuite() {
     'utf-8'
   );
   assert(headerSource.includes('href="/chat"'), 'The global app header must expose the group chat icon');
+  assert(headerSource.includes('chatUnreadCount'), 'The global chat icon must show an unread message count');
+  assert(headerSource.includes("event: 'message-created'"), 'The global header must react to incoming chat broadcasts');
+  assert(headerSource.includes('Tap to open chat'), 'Incoming messages must show an in-app popup with a chat shortcut');
 
-  console.log('  ✔ Group chat migration, server-side member check, message limits, realtime events and header entry verified.\\n');
+  const chatNotificationsSource = fs.readFileSync(
+    path.join(process.cwd(), 'src/lib/chat-notifications.ts'),
+    'utf-8'
+  );
+  assert(chatNotificationsSource.includes('localStorage'), 'Unread chat state must be stored locally on the device');
+  assert(chatNotificationsSource.includes('markChatMessagesRead'), 'Opening chat must clear the local unread state');
+  assert(chatPageSource.includes('markChatMessagesRead(userName, incoming)'), 'Chat page must mark fetched messages as read');
+  assert(chatApiSource.includes("searchParams.get('after')"), 'Chat API must support the device-local unread cursor without a schema change');
+
+  console.log('  ✔ Group chat persistence, realtime, unread badge, popup and device-local read tracking verified.\\n');
 
   console.log('🎉 ALL TESTS PASSED! NAVBAR CONTRACT, AUTO-SYNC, ORGANIZER PRIVILEGES, 6-MEMBER SPLIT, MEMBER SPENDING, PWA APP INSTALLATION, CHETAN PASSCODE, VYSHNAVI INFINITY, SUPABASE INTEGRATION, BLOB INDEPENDENCE, AVAILABLE BALANCE & GROUP CHAT VERIFIED!\n');
 }

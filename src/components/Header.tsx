@@ -3,8 +3,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
-import { RefreshCw, History, ArrowLeft, Palmtree, MessageCircle } from 'lucide-react';
+import { RefreshCw, History, ArrowLeft, Palmtree, MessageCircle, X } from 'lucide-react';
 import { useTrip } from '@/lib/trip-context';
+import { getSupabaseBrowserClient } from '@/lib/supabase/client';
+import { getChatNotificationStorageKeys, readChatUnreadIds, writeChatUnreadIds } from '@/lib/chat-notifications';
 
 interface HeaderProps {
   title?: string;
@@ -54,6 +56,155 @@ export function Header({
     }
   }, [state?.activities, isHistoryPage]);
 
+  const [chatUnreadCount, setChatUnreadCount] = useState(0);
+  const [chatAlert, setChatAlert] = useState<{ id: string; sender: string; content: string } | null>(null);
+
+  useEffect(() => {
+    if (!userName) {
+      setChatUnreadCount(0);
+      setChatAlert(null);
+      return;
+    }
+
+    // Opening the chat marks messages as read in ChatPage. Do not show alerts while it is open.
+    if (isChatPage) {
+      setChatUnreadCount(0);
+      setChatAlert(null);
+      return;
+    }
+
+    const keys = getChatNotificationStorageKeys(userName);
+    let active = true;
+    let syncInFlight = false;
+    let syncQueued = false;
+    let channel: any = null;
+    const client = getSupabaseBrowserClient();
+
+    setChatUnreadCount(readChatUnreadIds(userName).length);
+
+    const fetchChatMessages = async (after?: string) => {
+      const params = new URLSearchParams({ member: userName });
+      if (after) params.set('after', after);
+
+      const response = await fetch(`/api/chat/messages?${params.toString()}`, {
+        cache: 'no-store',
+        headers: { 'Cache-Control': 'no-cache' },
+      });
+      const result = await response.json();
+
+      if (!response.ok || !result.success || !Array.isArray(result.messages)) {
+        throw new Error(result.error || 'Unable to check unread chat messages');
+      }
+
+      return result.messages as Array<{ id: string; sender: string; content: string; created_at: string }>;
+    };
+
+    async function syncUnread(showPopup = true) {
+      if (syncInFlight) {
+        syncQueued = true;
+        return;
+      }
+
+      syncInFlight = true;
+      try {
+        let lastReadAt: string | null = null;
+        try {
+          lastReadAt = window.localStorage.getItem(keys.lastReadAt);
+        } catch {}
+
+        // On first use, establish a baseline instead of marking the entire old chat history unread.
+        if (!lastReadAt || Number.isNaN(Date.parse(lastReadAt))) {
+          const currentMessages = await fetchChatMessages();
+          if (!active) return;
+          const latest = currentMessages[currentMessages.length - 1];
+          try {
+            window.localStorage.setItem(keys.lastReadAt, latest?.created_at || new Date().toISOString());
+          } catch {}
+          writeChatUnreadIds(userName, []);
+          setChatUnreadCount(0);
+          return;
+        }
+
+        const incoming = await fetchChatMessages(lastReadAt);
+        if (!active) return;
+
+        const baselineTime = Date.parse(lastReadAt);
+        const unreadMessages = incoming.filter((message) => {
+          const isOwn = message.sender.trim().toLocaleLowerCase('en-IN') === userName.trim().toLocaleLowerCase('en-IN');
+          return !isOwn && Date.parse(message.created_at) > baselineTime;
+        });
+
+        const existingIds = readChatUnreadIds(userName);
+        const existingSet = new Set(existingIds);
+        const newlyUnread = unreadMessages.filter((message) => !existingSet.has(message.id));
+        const combinedIds = Array.from(new Set([...existingIds, ...unreadMessages.map((message) => message.id)])).slice(-100);
+
+        writeChatUnreadIds(userName, combinedIds);
+        setChatUnreadCount(combinedIds.length);
+
+        if (showPopup && newlyUnread.length > 0) {
+          const latestNewMessage = newlyUnread[newlyUnread.length - 1];
+          setChatAlert({
+            id: latestNewMessage.id,
+            sender: latestNewMessage.sender,
+            content: latestNewMessage.content,
+          });
+        }
+      } catch {
+        // Keep the last known unread count if the network is temporarily unavailable.
+      } finally {
+        syncInFlight = false;
+        if (syncQueued && active) {
+          syncQueued = false;
+          void syncUnread(false);
+        }
+      }
+    }
+
+    const handleStorage = (event: StorageEvent) => {
+      if (event.key === keys.unreadIds || event.key === keys.lastReadAt || event.key === null) {
+        setChatUnreadCount(readChatUnreadIds(userName).length);
+        if (readChatUnreadIds(userName).length === 0) setChatAlert(null);
+      }
+    };
+
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') void syncUnread(true);
+    };
+
+    window.addEventListener('storage', handleStorage);
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    if (client) {
+      channel = client
+        .channel('bvc-trip-group-chat')
+        .on('broadcast', { event: 'message-created' }, () => {
+          void syncUnread(true);
+        })
+        .subscribe();
+    }
+
+    const poll = window.setInterval(() => {
+      if (!document.hidden) void syncUnread(true);
+    }, 15000);
+
+    void syncUnread(true);
+
+    return () => {
+      active = false;
+      window.clearInterval(poll);
+      window.removeEventListener('storage', handleStorage);
+      document.removeEventListener('visibilitychange', handleVisibility);
+      if (client && channel) void client.removeChannel(channel);
+    };
+  }, [userName, isChatPage]);
+
+  useEffect(() => {
+    if (!chatAlert) return;
+    const timeout = window.setTimeout(() => setChatAlert(null), 5000);
+    return () => window.clearTimeout(timeout);
+  }, [chatAlert]);
+
   // Compute initials: "Chetan K" -> "CK", "Adithi" -> "AD"
   const userInitials = useMemo(() => {
     if (!userName || !userName.trim()) return 'CK';
@@ -82,6 +233,7 @@ export function Header({
       : `${membersCount} friends · One budget · Many memories`;
 
   return (
+    <>
     <header className="sticky top-0 z-30 w-full app-header-safe-area bg-[#FEFBF6]/95 backdrop-blur-md border-b border-[#EFE3D7]/70 shadow-[0_2px_8px_rgba(0,0,0,0.03)] select-none">
       <div className="w-full max-w-lg mx-auto grid grid-cols-[88px_minmax(0,1fr)_auto] items-center gap-1.5 sm:gap-2.5">
         {/* ================= LEFT SECTION ================= */}
@@ -178,10 +330,18 @@ export function Header({
                 ? 'border-[#D7192D] bg-[#FFF0F2] text-[#D7192D]'
                 : 'border-[#EFE3D7] bg-white text-[#81766C] hover:border-[#D7192D]/40 hover:bg-[#FFF8F7] hover:text-[#D7192D]'
             }`}
-            aria-label="Open BVC group chat"
-            title="BVC group chat"
+            aria-label={chatUnreadCount > 0 ? `Open BVC group chat, ${chatUnreadCount} unread messages` : 'Open BVC group chat'}
+            title={chatUnreadCount > 0 ? `${chatUnreadCount} unread chat messages` : 'BVC group chat'}
           >
             <MessageCircle className="h-5 w-5 stroke-[2.2]" />
+            {chatUnreadCount > 0 && (
+              <span
+                className="absolute -right-1.5 -top-1.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full border-2 border-white bg-[#D7192D] px-1 text-[9px] font-black leading-none text-white shadow-sm"
+                aria-label={`${chatUnreadCount} unread messages`}
+              >
+                {chatUnreadCount > 9 ? '9+' : chatUnreadCount}
+              </span>
+            )}
           </Link>
 
           {!rightAction && (
@@ -198,5 +358,43 @@ export function Header({
         </div>
       </div>
     </header>
+      {chatAlert && !isChatPage && (
+        <div
+          className="fixed left-3 right-3 top-[calc(env(safe-area-inset-top,0px)+4.5rem)] z-[60] mx-auto max-w-md"
+          role="status"
+          aria-live="polite"
+        >
+          <div className="flex items-start gap-2 rounded-2xl border border-[#F1D7D2] bg-white/95 p-3 shadow-[0_12px_35px_rgba(36,33,38,0.16)] backdrop-blur-xl">
+            <Link
+              href="/chat"
+              onClick={() => setChatAlert(null)}
+              className="flex min-w-0 flex-1 items-start gap-3"
+            >
+              <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#FFF0F2] text-[#D7192D]">
+                <MessageCircle className="h-4.5 w-4.5" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="flex items-center gap-2 text-xs font-extrabold text-[#242126]">
+                  {chatAlert.sender}
+                  <span className="text-[9px] font-bold uppercase tracking-wide text-[#D7192D]">New message</span>
+                </span>
+                <span className="mt-1 block truncate text-xs font-medium text-[#655B55]">
+                  {chatAlert.content}
+                </span>
+                <span className="mt-1 block text-[10px] font-bold text-[#D7192D]">Tap to open chat</span>
+              </span>
+            </Link>
+            <button
+              type="button"
+              onClick={() => setChatAlert(null)}
+              aria-label="Dismiss new chat message"
+              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[#81766C] transition-colors hover:bg-[#F6EDE2]"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      )}
+    </>
   );
 }

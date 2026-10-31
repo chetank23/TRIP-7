@@ -14,6 +14,7 @@ import { ArrowDown, Loader2, MessageCircle, Send } from 'lucide-react';
 import { Header } from '@/components/Header';
 import { useTrip } from '@/lib/trip-context';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
+import { markChatMessagesRead } from '@/lib/chat-notifications';
 
 interface ChatMessage {
   id: string;
@@ -105,6 +106,7 @@ export default function ChatPage() {
       }
 
       const incoming = (result.messages || []) as ChatMessage[];
+      if (!prepend) markChatMessagesRead(userName, incoming);
       setMessages((previous) => {
         if (!prepend && previous.length <= PAGE_SIZE) return incoming;
         const merged = new Map<string, ChatMessage>();
