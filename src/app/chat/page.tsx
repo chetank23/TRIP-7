@@ -65,6 +65,7 @@ export default function ChatPage() {
   const [hasMore, setHasMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [typingMember, setTypingMember] = useState<string | null>(null);
+  const [isRealtimeConnected, setIsRealtimeConnected] = useState(false);
 
   const channelRef = useRef<any>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -105,7 +106,7 @@ export default function ChatPage() {
 
       const incoming = (result.messages || []) as ChatMessage[];
       setMessages((previous) => {
-        if (!prepend) return incoming;
+        if (!prepend && previous.length <= PAGE_SIZE) return incoming;
         const merged = new Map<string, ChatMessage>();
         [...incoming, ...previous].forEach((message) => merged.set(message.id, message));
         return Array.from(merged.values()).sort(
@@ -154,7 +155,9 @@ export default function ChatPage() {
           if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
           typingTimeoutRef.current = setTimeout(() => setTypingMember(null), 1800);
         })
-        .subscribe();
+        .subscribe((status: string) => {
+          setIsRealtimeConnected(status === 'SUBSCRIBED');
+        });
 
       channelRef.current = channel;
     }
@@ -171,6 +174,7 @@ export default function ChatPage() {
         void client.removeChannel(channel);
       }
       channelRef.current = null;
+      setIsRealtimeConnected(false);
     };
   }, [userName, currentMember, isLoading, state, fetchMessages]);
 
@@ -289,7 +293,7 @@ export default function ChatPage() {
           </div>
           <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-bold text-emerald-700">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-            Live chat
+            {isRealtimeConnected ? 'Live chat' : 'Auto sync'}
           </span>
         </div>
 
