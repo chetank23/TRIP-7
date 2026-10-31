@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
-import { RefreshCw, History, ArrowLeft, Palmtree } from 'lucide-react';
+import { RefreshCw, History, ArrowLeft, Palmtree, MessageCircle } from 'lucide-react';
 import { useTrip } from '@/lib/trip-context';
 
 interface HeaderProps {
@@ -27,6 +27,7 @@ export function Header({
 
   const membersCount = state?.members?.length || 7;
   const isHistoryPage = pathname === '/history';
+  const isChatPage = pathname === '/chat';
 
   // Unread notifications tracker
   const [hasUnread, setHasUnread] = useState<boolean>(false);
@@ -56,7 +57,7 @@ export function Header({
   // Compute initials: "Chetan K" -> "CK", "Adithi" -> "AD"
   const userInitials = useMemo(() => {
     if (!userName || !userName.trim()) return 'CK';
-    const parts = userName.trim().split(/\s+/);
+    const parts = userName.trim().split(/\\s+/);
     if (parts.length >= 2) {
       return (parts[0][0] + parts[1][0]).toUpperCase();
     }
@@ -82,7 +83,7 @@ export function Header({
 
   return (
     <header className="sticky top-0 z-30 w-full app-header-safe-area bg-[#FEFBF6]/95 backdrop-blur-md border-b border-[#EFE3D7]/70 shadow-[0_2px_8px_rgba(0,0,0,0.03)] select-none">
-      <div className="w-full max-w-lg mx-auto grid grid-cols-[88px_minmax(0,1fr)_88px] items-center gap-1.5 sm:gap-2.5">
+      <div className="w-full max-w-lg mx-auto grid grid-cols-[88px_minmax(0,1fr)_auto] items-center gap-1.5 sm:gap-2.5">
         {/* ================= LEFT SECTION ================= */}
         <div className="flex items-center gap-2 shrink-0 justify-start">
           {showBack ? (
@@ -134,18 +135,18 @@ export function Header({
         </div>
 
         {/* ================= RIGHT SECTION ================= */}
-        <div className="flex items-center gap-2 shrink-0 justify-end">
+        <div className="flex items-center gap-1.5 shrink-0 justify-end">
           {rightAction ? (
-            rightAction
+            <>{rightAction}</>
           ) : (
             <>
               {/* History & Audit Trail Button */}
               <Link
                 href="/history"
-                className={`w-10 h-10 rounded-full bg-white border flex items-center justify-center active:scale-95 transition-all shadow-sm relative shrink-0 ${
+                className={`relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full border bg-white shadow-sm transition-all active:scale-95 ${
                   isHistoryPage
-                    ? 'border-[#D7192D] text-[#D7192D] bg-[#FFF8F7]'
-                    : 'border-[#EFE3D7] text-[#81766C] hover:text-[#D7192D] hover:border-[#D7192D]/40 hover:bg-[#F6EDE2]'
+                    ? 'border-[#D7192D] bg-[#FFF8F7] text-[#D7192D]'
+                    : 'border-[#EFE3D7] text-[#81766C] hover:border-[#D7192D]/40 hover:bg-[#F6EDE2] hover:text-[#D7192D]'
                 }`}
                 aria-label={
                   hasUnread
@@ -155,28 +156,44 @@ export function Header({
                 title={
                   hasUnread
                     ? 'New modifications recorded! Tap to inspect history'
-                    : 'Activity History · Who modified what (Permanent in Blob)'
+                    : 'Activity History · Who modified what'
                 }
               >
-                <History className="w-5 h-5 stroke-[2.2]" />
+                <History className="h-5 w-5 stroke-[2.2]" />
                 {hasUnread && (
                   <span
-                    className="absolute top-1.5 right-1.5 w-2.5 h-2.5 rounded-full bg-[#D7192D] ring-2 ring-white animate-pulse"
+                    className="absolute right-1 top-1 h-2.5 w-2.5 animate-pulse rounded-full bg-[#D7192D] ring-2 ring-white"
                     aria-hidden="true"
                   />
                 )}
               </Link>
-
-              {/* User Avatar Initial */}
-              <Link
-                href="/settings"
-                className="w-10 h-10 rounded-full bg-gradient-to-tr from-[#D7192D] to-[#FFC49B] text-white flex items-center justify-center font-black text-xs shadow-sm ring-2 ring-white hover:opacity-90 active:scale-95 transition-all shrink-0"
-                aria-label={`Logged in as ${userName || 'You'}. Open settings.`}
-                title={`Logged in as ${userName || 'Member'} (Click for Settings)`}
-              >
-                {userInitials}
-              </Link>
             </>
+          )}
+
+          {/* Group Chat — available throughout the app */}
+          <Link
+            href="/chat"
+            className={`relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full border shadow-sm transition-all active:scale-95 ${
+              isChatPage
+                ? 'border-[#D7192D] bg-[#FFF0F2] text-[#D7192D]'
+                : 'border-[#EFE3D7] bg-white text-[#81766C] hover:border-[#D7192D]/40 hover:bg-[#FFF8F7] hover:text-[#D7192D]'
+            }`}
+            aria-label="Open BVC group chat"
+            title="BVC group chat"
+          >
+            <MessageCircle className="h-5 w-5 stroke-[2.2]" />
+          </Link>
+
+          {!rightAction && (
+            /* User Avatar Initial */
+            <Link
+              href="/settings"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-tr from-[#D7192D] to-[#FFC49B] text-xs font-black text-white shadow-sm ring-2 ring-white transition-all hover:opacity-90 active:scale-95"
+              aria-label={`Logged in as ${userName || 'You'}. Open settings.`}
+              title={`Logged in as ${userName || 'Member'} (Click for Settings)`}
+            >
+              {userInitials}
+            </Link>
           )}
         </div>
       </div>
