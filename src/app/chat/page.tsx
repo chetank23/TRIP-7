@@ -215,7 +215,7 @@ export default function ChatPage() {
       type: 'broadcast',
       event: 'typing',
       payload: { sender: currentMember || userName },
-    });
+    }).catch(() => undefined);
   };
 
   const sendMessage = async (event?: FormEvent) => {
@@ -252,7 +252,7 @@ export default function ChatPage() {
           type: 'broadcast',
           event: 'message-created',
           payload: { id: sent.id },
-        });
+        }).catch(() => undefined);
       }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Message could not be sent';
