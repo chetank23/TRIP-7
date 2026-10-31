@@ -57,7 +57,7 @@ export function Header({
   // Compute initials: "Chetan K" -> "CK", "Adithi" -> "AD"
   const userInitials = useMemo(() => {
     if (!userName || !userName.trim()) return 'CK';
-    const parts = userName.trim().split(/\\s+/);
+    const parts = userName.trim().split(/\s+/);
     if (parts.length >= 2) {
       return (parts[0][0] + parts[1][0]).toUpperCase();
     }
