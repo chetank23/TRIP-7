@@ -8,6 +8,7 @@ import { BudgetModal } from '@/components/BudgetModal';
 import { PdfViewerModal } from '@/components/PdfViewerModal';
 import { Toast } from '@/components/Toast';
 import { ServiceWorkerRegister } from '@/components/ServiceWorkerRegister';
+import { PushNotificationPrompt } from '@/components/PushNotificationPrompt';
 import { PageSwitchTransition } from '@/components/PageSwitchTransition';
 import './globals.css';
 
@@ -62,6 +63,7 @@ export default function RootLayout({
       <body className="bg-bvc-bg text-bvc-text font-sans antialiased selection:bg-bvc-red/20 selection:text-bvc-red min-h-screen">
         <TripProvider>
           <ServiceWorkerRegister />
+          <PushNotificationPrompt />
           <Toast />
           <PageSwitchTransition>
             {children}
