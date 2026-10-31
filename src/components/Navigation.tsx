@@ -10,8 +10,8 @@ export function Navigation() {
   const pathname = usePathname();
   const { openAddExpense, userName } = useTrip();
 
-  // If user hasn't set their name yet, don't show navigation
-  if (!userName) return null;
+  // The chat screen uses a full-height conversation layout and its own composer.
+  if (!userName || pathname === '/chat') return null;
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-40 flex justify-center px-3 sm:px-4 pb-[calc(0.95rem+env(safe-area-inset-bottom,0px))] pointer-events-none select-none">
@@ -22,10 +22,8 @@ export function Navigation() {
         {/* Home */}
         <Link
           href="/"
-          className={`flex flex-col items-center justify-center flex-1 py-1 px-0.5 transition-colors group active:scale-95 ${
-            pathname === '/'
-              ? 'text-bvc-red font-semibold'
-              : 'text-bvc-secondary hover:text-bvc-text'
+          className={`flex flex-1 flex-col items-center justify-center px-0.5 py-1 transition-colors group active:scale-95 ${
+            pathname === '/' ? 'text-bvc-red font-semibold' : 'text-bvc-secondary hover:text-bvc-text'
           }`}
           aria-label="Home Dashboard"
         >
@@ -39,10 +37,8 @@ export function Navigation() {
         {/* Transactions */}
         <Link
           href="/transactions"
-          className={`flex flex-col items-center justify-center flex-1 py-1 px-0.5 transition-colors group active:scale-95 ${
-            pathname === '/transactions'
-              ? 'text-bvc-red font-semibold'
-              : 'text-bvc-secondary hover:text-bvc-text'
+          className={`flex flex-1 flex-col items-center justify-center px-0.5 py-1 transition-colors group active:scale-95 ${
+            pathname === '/transactions' ? 'text-bvc-red font-semibold' : 'text-bvc-secondary hover:text-bvc-text'
           }`}
           aria-label="Transactions"
         >
@@ -50,9 +46,7 @@ export function Navigation() {
             className="w-5 h-5 mb-0.5 group-hover:scale-110 transition-transform"
             strokeWidth={pathname === '/transactions' ? 2.5 : 1.8}
           />
-          <span className="text-[10px] tracking-tight truncate max-w-[58px] text-center">
-            Expenses
-          </span>
+          <span className="max-w-[58px] truncate text-center text-[10px] tracking-tight">Expenses</span>
         </Link>
 
         {/* Central Raised Red Add Expense Button */}
@@ -71,10 +65,8 @@ export function Navigation() {
         {/* Analytics */}
         <Link
           href="/analytics"
-          className={`flex flex-col items-center justify-center flex-1 py-1 px-0.5 transition-colors group active:scale-95 ${
-            pathname === '/analytics'
-              ? 'text-bvc-red font-semibold'
-              : 'text-bvc-secondary hover:text-bvc-text'
+          className={`flex flex-1 flex-col items-center justify-center px-0.5 py-1 transition-colors group active:scale-95 ${
+            pathname === '/analytics' ? 'text-bvc-red font-semibold' : 'text-bvc-secondary hover:text-bvc-text'
           }`}
           aria-label="Analytics"
         >
@@ -88,10 +80,8 @@ export function Navigation() {
         {/* Documents */}
         <Link
           href="/documents"
-          className={`flex flex-col items-center justify-center flex-1 py-1 px-0.5 transition-colors group active:scale-95 ${
-            pathname === '/documents'
-              ? 'text-bvc-red font-semibold'
-              : 'text-bvc-secondary hover:text-bvc-text'
+          className={`flex flex-1 flex-col items-center justify-center px-0.5 py-1 transition-colors group active:scale-95 ${
+            pathname === '/documents' ? 'text-bvc-red font-semibold' : 'text-bvc-secondary hover:text-bvc-text'
           }`}
           aria-label="Documents"
         >
