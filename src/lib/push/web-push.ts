@@ -204,6 +204,7 @@ export async function sendWebPush(
       Urgency: 'normal',
     },
     body,
+    signal: AbortSignal.timeout(12000),
   });
 
   if (response.status === 404 || response.status === 410) {
