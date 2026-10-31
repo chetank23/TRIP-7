@@ -658,6 +658,10 @@ async function runTestSuite() {
   assert(chatApiSource.includes('resolveTripMember'), 'Chat API must validate the selected profile against trip members');
   assert(chatApiSource.includes(".from('chat_messages')"), 'Chat API must persist messages in PostgreSQL');
   assert(chatApiSource.includes('MAX_MESSAGE_LENGTH = 2000'), 'Chat API must enforce the message length limit');
+  assert(chatApiSource.includes('export async function DELETE'), 'Chat API must expose the clear-chat endpoint');
+  assert(chatApiSource.includes('isOrganizer(member)'), 'Clear-chat API must restrict deletion to the organizer');
+  assert(chatApiSource.includes(".from('chat_messages')"), 'Clear-chat API must only operate on the chat_messages table');
+  assert(chatApiSource.includes(".delete({ count: 'exact' })"), 'Clear-chat API must delete chat messages and return the affected count');
 
   const chatPageSource = fs.readFileSync(
     path.join(process.cwd(), 'src/app/chat/page.tsx'),
@@ -677,6 +681,10 @@ async function runTestSuite() {
   assert(chatPageSource.includes('typingMembers.length > 0'), 'Chat UI must support multiple simultaneous typers');
   assert(chatPageSource.includes('findProfileByName'), 'Chat avatars must use the existing member profile photos');
   assert(chatPageSource.includes('/api/chat/messages'), 'Chat UI must use the server message API');
+  assert(chatPageSource.includes('const canClearChat = useMemo'), 'Chat UI must identify organizer-only clear-chat access');
+  assert(chatPageSource.includes('Clear chat'), 'Organizer must see a clear-chat control');
+  assert(chatPageSource.includes("event: 'chat-cleared'"), 'Chat participants must receive the clear-chat realtime event');
+  assert(chatPageSource.includes("method: 'DELETE'"), 'Chat UI must send clear-chat requests to the server');
 
   const headerSource = fs.readFileSync(
     path.join(process.cwd(), 'src/components/Header.tsx'),
@@ -685,6 +693,7 @@ async function runTestSuite() {
   assert(headerSource.includes('href="/chat"'), 'The global app header must expose the group chat icon');
   assert(headerSource.includes('chatUnreadCount'), 'The global chat icon must show an unread message count');
   assert(headerSource.includes("event: 'message-created'"), 'The global header must react to incoming chat broadcasts');
+  assert(headerSource.includes("event: 'chat-cleared'"), 'The global header must clear unread alerts when chat is cleared');
   assert(headerSource.includes('Tap to open chat'), 'Incoming messages must show an in-app popup with a chat shortcut');
 
   const chatNotificationsSource = fs.readFileSync(

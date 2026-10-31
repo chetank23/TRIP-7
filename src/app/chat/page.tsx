@@ -10,7 +10,8 @@ import React, {
   useState,
 } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowDown, Loader2, MessageCircle, Send } from 'lucide-react';
+import { ArrowDown, Loader2, MessageCircle, Send, Trash2 } from 'lucide-react';
+import { isOrganizer } from '@/lib/auth';
 import { findProfileByName } from '@/lib/profiles';
 import { Header } from '@/components/Header';
 import { useTrip } from '@/lib/trip-context';
@@ -71,6 +72,7 @@ export default function ChatPage() {
   const [seenByMessage, setSeenByMessage] = useState<Record<string, Array<{ reader: string; readAt: string }>>>({});
   const [expandedReceiptMessageId, setExpandedReceiptMessageId] = useState<string | null>(null);
   const [isRealtimeConnected, setIsRealtimeConnected] = useState(false);
+  const [isClearingChat, setIsClearingChat] = useState(false);
 
   const channelRef = useRef<any>(null);
   const typingTimeoutsRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
@@ -86,6 +88,11 @@ export default function ChatPage() {
       (member) => member.trim().toLocaleLowerCase('en-IN') === userName.trim().toLocaleLowerCase('en-IN')
     ) || null;
   }, [state?.members, userName]);
+
+  const canClearChat = useMemo(
+    () => isOrganizer(currentMember || userName),
+    [currentMember, userName]
+  );
 
   useEffect(() => {
     if (isUserLoaded && !userName) {
@@ -161,6 +168,15 @@ export default function ChatPage() {
             !listRef.current ||
             listRef.current.scrollHeight - listRef.current.scrollTop - listRef.current.clientHeight < 120;
           void fetchMessages();
+        })
+        .on('broadcast', { event: 'chat-cleared' }, () => {
+          setMessages([]);
+          setHasMore(false);
+          setSeenByMessage({});
+          setExpandedReceiptMessageId(null);
+          setTypingMembers([]);
+          setError(null);
+          markChatMessagesRead(userName, []);
         })
         .on('broadcast', { event: 'typing' }, ({ payload }: { payload?: { sender?: string } }) => {
           const sender = payload?.sender;
@@ -354,6 +370,48 @@ export default function ChatPage() {
     }
   };
 
+  const clearChat = async () => {
+    if (!userName || !canClearChat || isClearingChat) return;
+
+    const confirmed = window.confirm(
+      'Clear all BVC Junction messages for everyone? This cannot be undone.'
+    );
+    if (!confirmed) return;
+
+    setIsClearingChat(true);
+    setError(null);
+    try {
+      const response = await fetch('/api/chat/messages', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ member: userName }),
+      });
+      const result = await response.json();
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || 'Unable to clear BVC Junction chat');
+      }
+
+      setMessages([]);
+      setHasMore(false);
+      setSeenByMessage({});
+      setExpandedReceiptMessageId(null);
+      setTypingMembers([]);
+      markChatMessagesRead(userName, []);
+
+      if (channelRef.current) {
+        void channelRef.current.send({
+          type: 'broadcast',
+          event: 'chat-cleared',
+          payload: { clearedBy: currentMember || userName, clearedAt: new Date().toISOString() },
+        }).catch(() => undefined);
+      }
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Unable to clear BVC Junction chat');
+    } finally {
+      setIsClearingChat(false);
+    }
+  };
+
   const handleComposerKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault();
@@ -379,7 +437,8 @@ export default function ChatPage() {
       <Header title="BVC Junction" subtitle="Your group's shared chat" showBack />
 
       <main className="mx-auto flex h-[calc(100dvh-5rem)] min-h-[420px] w-full max-w-lg flex-1 flex-col px-3 pb-[calc(12px+env(safe-area-inset-bottom,0px))] pt-3 sm:px-4">
-        <div className="mb-3 flex items-center justify-between rounded-2xl border border-cream-300 bg-white/80 px-3.5 py-2.5 shadow-sm">
+        <div className="mb-3 rounded-2xl border border-cream-300 bg-white/80 px-3.5 py-2.5 shadow-sm">
+          <div className="flex items-center justify-between">
           <div className="flex min-w-0 items-center gap-2">
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-bvc-redLight text-bvc-red">
               <MessageCircle className="h-4.5 w-4.5" />
@@ -417,6 +476,23 @@ export default function ChatPage() {
               </span>
             )}
           </div>
+          </div>
+          {canClearChat && (
+            <div className="mt-2 flex justify-end border-t border-cream-200 pt-2">
+              <button
+                type="button"
+                onClick={() => void clearChat()}
+                disabled={isClearingChat}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-bvc-red/20 bg-bvc-redLight px-3 py-1.5 text-[10px] font-bold text-bvc-red transition-colors hover:bg-bvc-red/10 disabled:cursor-not-allowed disabled:opacity-60"
+                aria-label="Clear all BVC Junction messages"
+              >
+                {isClearingChat
+                  ? <Loader2 className="h-3 w-3 animate-spin" />
+                  : <Trash2 className="h-3 w-3" />}
+                {isClearingChat ? 'Clearing…' : 'Clear chat'}
+              </button>
+            </div>
+          )}
         </div>
 
         <section

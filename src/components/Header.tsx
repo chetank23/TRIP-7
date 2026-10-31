@@ -181,6 +181,11 @@ export function Header({
         .on('broadcast', { event: 'message-created' }, () => {
           void syncUnread(true);
         })
+        .on('broadcast', { event: 'chat-cleared' }, () => {
+          writeChatUnreadIds(userName, []);
+          setChatUnreadCount(0);
+          setChatAlert(null);
+        })
         .subscribe();
     }
 

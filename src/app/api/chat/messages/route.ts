@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { hasSupabaseServerConfig, getSupabaseServerClient } from '@/lib/supabase/server';
+import { isOrganizer } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -138,5 +139,39 @@ export async function POST(request: NextRequest) {
     const message = error instanceof Error ? error.message : 'Unable to send message';
     console.error('Chat POST failed:', message);
     return json({ success: false, error: 'Unable to send your message right now.' }, 500);
+  }
+}
+
+
+export async function DELETE(request: NextRequest) {
+  try {
+    if (!hasSupabaseServerConfig()) {
+      return json({ success: false, error: 'Chat requires the existing Supabase database connection.' }, 503);
+    }
+
+    const body = await request.json().catch(() => null);
+    const requestedMember = typeof body?.member === 'string' ? body.member : '';
+    const member = await resolveTripMember(requestedMember);
+
+    if (!member || !isOrganizer(member)) {
+      return json({ success: false, error: 'Only the BVC organizer can clear the group chat.' }, 403);
+    }
+
+    const supabase = getSupabaseServerClient();
+    const { count, error } = await supabase
+      .from('chat_messages')
+      .delete({ count: 'exact' })
+      .not('id', 'is', null);
+
+    if (error) {
+      console.error('BVC chat clear failed:', error.message);
+      return json({ success: false, error: 'Unable to clear BVC Junction chat right now.' }, 503);
+    }
+
+    return json({ success: true, deletedCount: count ?? 0 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unable to clear BVC Junction chat';
+    console.error('BVC chat DELETE failed:', message);
+    return json({ success: false, error: 'Unable to clear BVC Junction chat right now.' }, 500);
   }
 }
