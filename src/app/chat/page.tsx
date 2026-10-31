@@ -125,11 +125,19 @@ export default function ChatPage() {
   }, [userName]);
 
   useEffect(() => {
-    if (!userName || !currentMember) {
-      if (!isLoading && state) {
+    if (!userName) return;
+
+    if (!state) {
+      if (!isLoading) {
         setIsLoadingMessages(false);
-        setError('This profile is not in the current trip member list. Ask the trip organizer to add it.');
+        setError('Unable to load the trip member list. Refresh the app and try again.');
       }
+      return;
+    }
+
+    if (!currentMember) {
+      setIsLoadingMessages(false);
+      setError('This profile is not in the current trip member list. Ask the trip organizer to add it.');
       return;
     }
 
