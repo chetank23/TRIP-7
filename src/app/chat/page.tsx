@@ -170,9 +170,16 @@ export default function ChatPage() {
             listRef.current.scrollHeight - listRef.current.scrollTop - listRef.current.clientHeight < 120;
           void fetchMessages();
         })
-        .on('broadcast', { event: 'message-changed' }, ({ payload }: { payload?: { id?: string; action?: 'updated' | 'deleted' } }) => {
+        .on('broadcast', { event: 'message-changed' }, ({ payload }: { payload?: { id?: string; action?: 'updated' | 'deleted'; message?: ChatMessage } }) => {
           if (payload?.action === 'deleted' && payload.id) {
             setMessages((current) => current.filter((message) => message.id !== payload.id));
+            setSeenByMessage((current) => {
+              const next = { ...current };
+              delete next[payload.id as string];
+              return next;
+            });
+          } else if (payload?.action === 'updated' && payload.message) {
+            setMessages((current) => current.map((message) => message.id === payload.message?.id ? payload.message as ChatMessage : message));
           }
           shouldStickToBottomRef.current =
             !listRef.current ||
@@ -242,7 +249,10 @@ export default function ChatPage() {
 
     return () => {
       window.clearInterval(poll);
-      clearLongPressTimer();
+      if (longPressTimerRef.current) {
+        clearTimeout(longPressTimerRef.current);
+        longPressTimerRef.current = null;
+      }
       typingTimeoutsRef.current.forEach((timeout) => clearTimeout(timeout));
       typingTimeoutsRef.current.clear();
       if (client && channel) {
@@ -410,12 +420,12 @@ export default function ChatPage() {
     setActionMenuMessageId(message.id);
   };
 
-  const broadcastMessageChange = (id: string, action: 'updated' | 'deleted') => {
+  const broadcastMessageChange = (message: ChatMessage, action: 'updated' | 'deleted') => {
     if (!channelRef.current) return;
     void channelRef.current.send({
       type: 'broadcast',
       event: 'message-changed',
-      payload: { id, action },
+      payload: { id: message.id, action, message: action === 'updated' ? message : undefined },
     }).catch(() => undefined);
   };
 
@@ -449,7 +459,7 @@ export default function ChatPage() {
       setEditingMessageId(null);
       setActionMenuMessageId(null);
       setEditDraft('');
-      broadcastMessageChange(message.id, 'updated');
+      broadcastMessageChange(updated, 'updated');
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Unable to edit this message');
     } finally {
@@ -489,7 +499,7 @@ export default function ChatPage() {
         setEditingMessageId(null);
         setEditDraft('');
       }
-      broadcastMessageChange(message.id, 'deleted');
+      broadcastMessageChange(message, 'deleted');
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Unable to delete this message');
     } finally {
@@ -565,6 +575,7 @@ export default function ChatPage() {
         <section
           ref={listRef}
           onScroll={handleScroll}
+          onClick={() => setActionMenuMessageId(null)}
           aria-label="Group messages"
           className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain rounded-2xl px-1 py-2"
         >
@@ -646,7 +657,7 @@ export default function ChatPage() {
                             value={editDraft}
                             onChange={(event) => setEditDraft(event.target.value)}
                             maxLength={MAX_MESSAGE_LENGTH}
-                            rows={Math.min(4, Math.max(2, editDraft.split('\\n').length))}
+                            rows={Math.min(4, Math.max(2, editDraft.split('\n').length))}
                             aria-label="Edit message"
                             className="max-h-32 min-h-16 w-full resize-y rounded-lg border border-white/40 bg-white/15 p-2 text-[13px] leading-relaxed text-white outline-none placeholder:text-white/70"
                           />
