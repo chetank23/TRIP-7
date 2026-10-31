@@ -688,8 +688,8 @@ async function runTestSuite() {
   const pushMigrationSource = fs.readFileSync(pushMigrationPath, 'utf-8');
   assert(pushMigrationSource.includes('CREATE TABLE IF NOT EXISTS public.push_subscriptions'), 'Push device subscriptions must be persisted in Supabase');
   assert(pushMigrationSource.includes('CREATE TABLE IF NOT EXISTS public.push_notification_runs'), 'Daily send ledger must prevent duplicate reminders');
-  assert(pushMigrationSource.includes('REVOKE ALL ON TABLE public.push_subscriptions FROM anon, authenticated'), 'Browser roles must not read or modify device subscriptions');
-  assert(pushMigrationSource.includes('REVOKE ALL ON TABLE public.push_notification_runs FROM anon, authenticated'), 'Browser roles must not read or modify the cron ledger');
+  assert(pushMigrationSource.includes('REVOKE ALL ON TABLE public.push_subscriptions FROM PUBLIC, anon, authenticated'), 'Browser roles must not read or modify device subscriptions');
+  assert(pushMigrationSource.includes('REVOKE ALL ON TABLE public.push_notification_runs FROM PUBLIC, anon, authenticated'), 'Browser roles must not read or modify the cron ledger');
 
   const pushApiSource = fs.readFileSync(
     path.join(process.cwd(), 'src/app/api/push/subscriptions/route.ts'),
