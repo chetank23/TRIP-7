@@ -364,7 +364,7 @@ export default function ChatPage() {
   if (!isUserLoaded || (isLoading && !state)) {
     return (
       <div className="min-h-screen bg-bvc-bg">
-        <Header title="BVC Circle" showBack />
+        <Header title="BVC Junction" showBack />
         <div className="flex min-h-[55vh] items-center justify-center text-bvc-secondary">
           <Loader2 className="h-6 w-6 animate-spin text-bvc-red" />
         </div>
@@ -376,7 +376,7 @@ export default function ChatPage() {
 
   return (
     <div className="flex min-h-[100dvh] flex-col bg-bvc-bg">
-      <Header title="BVC Circle" subtitle="Your group's shared chat" showBack />
+      <Header title="BVC Junction" subtitle="Your group's shared chat" showBack />
 
       <main className="mx-auto flex h-[calc(100dvh-5rem)] min-h-[420px] w-full max-w-lg flex-1 flex-col px-3 pb-[calc(12px+env(safe-area-inset-bottom,0px))] pt-3 sm:px-4">
         <div className="mb-3 flex items-center justify-between rounded-2xl border border-cream-300 bg-white/80 px-3.5 py-2.5 shadow-sm">
@@ -387,13 +387,13 @@ export default function ChatPage() {
             <div className="min-w-0">
               <p className="truncate text-xs font-extrabold text-bvc-text">BVC Friends</p>
               <p className="text-[10px] font-medium text-bvc-secondary">
-                {onlineMembers.length} online in chat
+                {onlineMembers.length} BVC online
               </p>
             </div>
           </div>
           <div className="flex max-w-[58%] items-center justify-end">
             {onlineMembers.length > 0 ? (
-              <div className="flex items-center pl-1" aria-label={`${onlineMembers.length} members online in chat`}>
+              <div className="flex items-center pl-1" aria-label={`${onlineMembers.length} BVC members online`}>
                 {onlineMembers.slice(0, 6).map((member) => {
                   const profile = findProfileByName(member);
                   return (
