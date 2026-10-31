@@ -636,7 +636,46 @@ async function runTestSuite() {
   );
   console.log('  ✔ Available Balance calculation (61,000 - 11,502 = 49,498) & masking verified.\n');
 
-  console.log('🎉 ALL TESTS PASSED! NAVBAR CONTRACT, AUTO-SYNC, ORGANIZER PRIVILEGES, 6-MEMBER SPLIT, MEMBER SPENDING, PWA APP INSTALLATION, CHETAN PASSCODE, VYSHNAVI INFINITY, SUPABASE INTEGRATION, BLOB INDEPENDENCE & AVAILABLE BALANCE VERIFIED!\n');
+  // ---------------------------------------------------------------------------
+  // Test Q: BVC Group Chat Contract
+  // ---------------------------------------------------------------------------
+  console.log('Test Q: BVC Group Chat persistence, member validation & realtime contract');
+  const chatMigrationPath = path.join(
+    process.cwd(),
+    'supabase/migrations/20261031000000_bvc_trip_chat.sql'
+  );
+  assert(fs.existsSync(chatMigrationPath), 'BVC group chat database migration must exist');
+  const chatMigrationSource = fs.readFileSync(chatMigrationPath, 'utf-8');
+  assert(chatMigrationSource.includes('CREATE TABLE IF NOT EXISTS public.chat_messages'), 'Chat messages must have a dedicated PostgreSQL table');
+  assert(chatMigrationSource.includes('char_length(btrim(content)) BETWEEN 1 AND 2000'), 'Database must enforce the 2,000 character message limit');
+  assert(chatMigrationSource.includes('ENABLE ROW LEVEL SECURITY'), 'Chat messages table must have RLS enabled');
+  assert(chatMigrationSource.includes('REVOKE ALL ON TABLE public.chat_messages FROM anon, authenticated'), 'Browser roles must not receive direct message table access');
+
+  const chatApiSource = fs.readFileSync(
+    path.join(process.cwd(), 'src/app/api/chat/messages/route.ts'),
+    'utf-8'
+  );
+  assert(chatApiSource.includes('resolveTripMember'), 'Chat API must validate the selected profile against trip members');
+  assert(chatApiSource.includes(".from('chat_messages')"), 'Chat API must persist messages in PostgreSQL');
+  assert(chatApiSource.includes('MAX_MESSAGE_LENGTH = 2000'), 'Chat API must enforce the message length limit');
+
+  const chatPageSource = fs.readFileSync(
+    path.join(process.cwd(), 'src/app/chat/page.tsx'),
+    'utf-8'
+  );
+  assert(chatPageSource.includes("event: 'message-created'"), 'Chat clients must subscribe to realtime message broadcasts');
+  assert(chatPageSource.includes("event: 'typing'"), 'Chat clients must support typing indicators');
+  assert(chatPageSource.includes('/api/chat/messages'), 'Chat UI must use the server message API');
+
+  const headerSource = fs.readFileSync(
+    path.join(process.cwd(), 'src/components/Header.tsx'),
+    'utf-8'
+  );
+  assert(headerSource.includes('href="/chat"'), 'The global app header must expose the group chat icon');
+
+  console.log('  ✔ Group chat migration, server-side member check, message limits, realtime events and header entry verified.\\n');
+
+  console.log('🎉 ALL TESTS PASSED! NAVBAR CONTRACT, AUTO-SYNC, ORGANIZER PRIVILEGES, 6-MEMBER SPLIT, MEMBER SPENDING, PWA APP INSTALLATION, CHETAN PASSCODE, VYSHNAVI INFINITY, SUPABASE INTEGRATION, BLOB INDEPENDENCE, AVAILABLE BALANCE & GROUP CHAT VERIFIED!\n');
 }
 
 runTestSuite().catch((err) => {
