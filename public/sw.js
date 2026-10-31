@@ -1,6 +1,6 @@
 // BVC Trip Lightweight PWA Service Worker for iOS (iPhone 14+) & Android
 // Bump this when application bundles change so old offline HTML/assets are discarded.
-const CACHE_NAME = 'bvc-trip-v3';
+const CACHE_NAME = 'bvc-trip-v2';
 
 const STATIC_ASSETS = [
   '/',
@@ -38,69 +38,6 @@ self.addEventListener('activate', (event) => {
 });
 
 // Network-first strategy with cache fallback for HTML, stale-while-revalidate for assets
-
-// Display every received push immediately. This is required for reliable
-// Web Push behaviour on iOS Home Screen web apps as well as Android browsers.
-self.addEventListener('push', (event) => {
-  event.waitUntil((async () => {
-    let payload = {};
-    try {
-      payload = event.data ? event.data.json() : {};
-    } catch {
-      payload = { body: event.data ? event.data.text() : 'A new BVC update is waiting.' };
-    }
-
-    const title = typeof payload.title === 'string' ? payload.title : 'BVC Trip 🌴';
-    const body = typeof payload.body === 'string'
-      ? payload.body
-      : 'Your BVC group has a new update.';
-
-    await self.registration.showNotification(title, {
-      body,
-      icon: '/icon-192.png',
-      badge: '/icon-192.png',
-      tag: typeof payload.tag === 'string' ? payload.tag : 'bvc-trip-notification',
-      renotify: false,
-      data: { url: typeof payload.url === 'string' ? payload.url : '/' },
-    });
-  })());
-});
-
-self.addEventListener('notificationclick', (event) => {
-  event.notification.close();
-
-  event.waitUntil((async () => {
-    let targetUrl = '/';
-    try {
-      const requestedUrl = new URL(event.notification.data?.url || '/', self.location.origin);
-      if (requestedUrl.origin === self.location.origin) {
-        targetUrl = requestedUrl.href;
-      }
-    } catch {
-      targetUrl = '/';
-    }
-
-    const windows = await self.clients.matchAll({
-      type: 'window',
-      includeUncontrolled: true,
-    });
-
-    for (const client of windows) {
-      if ('focus' in client) {
-        if ('navigate' in client) {
-          await client.navigate(targetUrl);
-        }
-        await client.focus();
-        return;
-      }
-    }
-
-    if (self.clients.openWindow) {
-      await self.clients.openWindow(targetUrl);
-    }
-  })());
-});
-
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
