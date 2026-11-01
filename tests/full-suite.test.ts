@@ -428,6 +428,12 @@ async function runTestSuite() {
   assert(migrationSql.includes('CREATE TABLE IF NOT EXISTS documents'), 'Schema must define documents table');
   assert(migrationSql.includes('CREATE TABLE IF NOT EXISTS document_contents'), 'Schema must define document_contents table for BYTEA PDFs');
   assert(migrationSql.includes('ENABLE ROW LEVEL SECURITY'), 'Schema must enable Row Level Security (RLS)');
+  assert(migrationSql.includes('FROM pg_policies'), 'Policy creation must check existing PostgreSQL policies before creating them');
+  assert(migrationSql.includes('policyname = policy_definition.policy_name'), 'Policy existence checks must match the exact policy name');
+  assert(migrationSql.includes("('trip_config', 'Allow public read on trip_config', 'FOR SELECT USING (true)')"), 'The trip_config read policy must retain its original rule');
+  assert(migrationSql.includes("('documents', 'Allow service mutation on documents', 'FOR ALL USING (true) WITH CHECK (true)')"), 'The documents mutation policy must retain its original rule');
+  assert(migrationSql.includes("('document_contents', 'Allow public read on document_contents', 'FOR SELECT USING (true)')"), 'The document_contents read policy must also be idempotent');
+  assert(!/^\\s*CREATE POLICY\\b/m.test(migrationSql), 'Migration must not contain unguarded CREATE POLICY statements');
   assert(migrationSql.includes('supabase_realtime'), 'Schema must configure supabase_realtime publication');
   assert(migrationSql.includes('bump_trip_version'), 'Schema must declare bump_trip_version function');
   assert(migrationSql.includes('create_expense_with_audit'), 'Schema must declare atomic create_expense_with_audit RPC');

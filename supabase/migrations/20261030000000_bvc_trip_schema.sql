@@ -116,17 +116,42 @@ ALTER TABLE expenses ENABLE ROW LEVEL SECURITY;
 ALTER TABLE activities ENABLE ROW LEVEL SECURITY;
 ALTER TABLE documents ENABLE ROW LEVEL SECURITY;
 
--- Allow read access to all trip tables for trip participants
-CREATE POLICY "Allow public read on trip_config" ON trip_config FOR SELECT USING (true);
-CREATE POLICY "Allow public read on expenses" ON expenses FOR SELECT USING (true);
-CREATE POLICY "Allow public read on activities" ON activities FOR SELECT USING (true);
-CREATE POLICY "Allow public read on documents" ON documents FOR SELECT USING (true);
-
--- Allow mutations via service role or authorized application clients
-CREATE POLICY "Allow service mutation on trip_config" ON trip_config FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Allow service mutation on expenses" ON expenses FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Allow service mutation on activities" ON activities FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Allow service mutation on documents" ON documents FOR ALL USING (true) WITH CHECK (true);
+-- Allow read access to all trip tables for trip participants.
+-- Keep the original policy rules while skipping any policy that already exists.
+DO $
+DECLARE
+  policy_definition RECORD;
+BEGIN
+  FOR policy_definition IN
+    SELECT *
+    FROM (VALUES
+      ('trip_config', 'Allow public read on trip_config', 'FOR SELECT USING (true)'),
+      ('expenses', 'Allow public read on expenses', 'FOR SELECT USING (true)'),
+      ('activities', 'Allow public read on activities', 'FOR SELECT USING (true)'),
+      ('documents', 'Allow public read on documents', 'FOR SELECT USING (true)'),
+      ('trip_config', 'Allow service mutation on trip_config', 'FOR ALL USING (true) WITH CHECK (true)'),
+      ('expenses', 'Allow service mutation on expenses', 'FOR ALL USING (true) WITH CHECK (true)'),
+      ('activities', 'Allow service mutation on activities', 'FOR ALL USING (true) WITH CHECK (true)'),
+      ('documents', 'Allow service mutation on documents', 'FOR ALL USING (true) WITH CHECK (true)')
+    ) AS requested_policies(table_name, policy_name, policy_clause)
+  LOOP
+    IF NOT EXISTS (
+      SELECT 1
+      FROM pg_policies
+      WHERE schemaname = 'public'
+        AND tablename = policy_definition.table_name
+        AND policyname = policy_definition.policy_name
+    ) THEN
+      EXECUTE format(
+        'CREATE POLICY %I ON public.%I %s',
+        policy_definition.policy_name,
+        policy_definition.table_name,
+        policy_definition.policy_clause
+      );
+    END IF;
+  END LOOP;
+END;
+$;
 
 -- 7. Helper RPC function to atomically increment version
 CREATE OR REPLACE FUNCTION bump_trip_version()
@@ -157,8 +182,36 @@ CREATE TABLE IF NOT EXISTS document_contents (
 );
 
 ALTER TABLE document_contents ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Allow public read on document_contents" ON document_contents FOR SELECT USING (true);
-CREATE POLICY "Allow service mutation on document_contents" ON document_contents FOR ALL USING (true) WITH CHECK (true);
+
+-- Apply document_contents policies only when they are not already present.
+DO $
+DECLARE
+  policy_definition RECORD;
+BEGIN
+  FOR policy_definition IN
+    SELECT *
+    FROM (VALUES
+      ('document_contents', 'Allow public read on document_contents', 'FOR SELECT USING (true)'),
+      ('document_contents', 'Allow service mutation on document_contents', 'FOR ALL USING (true) WITH CHECK (true)')
+    ) AS requested_policies(table_name, policy_name, policy_clause)
+  LOOP
+    IF NOT EXISTS (
+      SELECT 1
+      FROM pg_policies
+      WHERE schemaname = 'public'
+        AND tablename = policy_definition.table_name
+        AND policyname = policy_definition.policy_name
+    ) THEN
+      EXECUTE format(
+        'CREATE POLICY %I ON public.%I %s',
+        policy_definition.policy_name,
+        policy_definition.table_name,
+        policy_definition.policy_clause
+      );
+    END IF;
+  END LOOP;
+END;
+$;
 
 -- 9. Atomic Expense Creation with Coordinated Audit Entry
 CREATE OR REPLACE FUNCTION create_expense_with_audit(
