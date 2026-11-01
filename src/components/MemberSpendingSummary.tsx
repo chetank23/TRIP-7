@@ -1,12 +1,37 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useTrip } from '@/lib/trip-context';
-import { Users, Crown, ArrowUpRight } from 'lucide-react';
+import { Users, Crown, ChevronDown, ChevronUp } from 'lucide-react';
 import { FRIEND_PROFILES } from '@/lib/profiles';
 
+function formatExpenseDate(value: string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return 'Date unavailable';
+  return date.toLocaleDateString('en-IN', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
+}
+
 export function MemberSpendingSummary() {
-  const { memberSpending, totalSpent } = useTrip();
+  const { memberSpending, totalSpent, state } = useTrip();
+  const [expandedMember, setExpandedMember] = useState<string | null>(null);
+
+  const getMemberExpenses = (memberName: string) => {
+    const normalizedName = memberName.trim().toLocaleLowerCase('en-IN');
+    return (state?.expenses || [])
+      .filter((expense) => {
+        const paidBy = (expense.paidBy || '').trim().toLocaleLowerCase('en-IN');
+        return Boolean(paidBy) && (
+          paidBy === normalizedName ||
+          paidBy.startsWith(normalizedName) ||
+          normalizedName.startsWith(paidBy)
+        );
+      })
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  };
 
   // 6-member equal share target
   const equalShareFor6 = totalSpent > 0 ? Math.round(totalSpent / 6) : 0;
@@ -70,10 +95,20 @@ export function MemberSpendingSummary() {
           const isTopPayer = idx === 0 && member.totalPaid > 0;
           const isVyshnavi = member.name.toLowerCase().includes('vysh');
           const balance = member.totalPaid - equalShareFor6;
+          const isExpanded = expandedMember === member.name;
+          const memberExpenses = getMemberExpenses(member.name);
+          const detailsId = `member-expenses-${idx}`;
 
           return (
             <div key={member.name} className="py-3 first:pt-1 last:pb-1 space-y-1.5">
-              <div className="flex items-center justify-between">
+              <button
+                type="button"
+                onClick={() => setExpandedMember((current) => current === member.name ? null : member.name)}
+                aria-expanded={isExpanded}
+                aria-controls={detailsId}
+                aria-label={`Show expenses paid by ${member.name}`}
+                className="flex w-full items-center justify-between gap-2 rounded-xl text-left outline-none transition-colors focus-visible:ring-2 focus-visible:ring-bvc-red/40"
+              >
                 {/* Left: Avatar & Member Name */}
                 <div className="flex items-center space-x-3 min-w-0">
                   <div className="relative">
@@ -124,8 +159,9 @@ export function MemberSpendingSummary() {
                   </div>
                 </div>
 
-                {/* Right: Total Amount & Percentage */}
-                <div className="text-right shrink-0">
+                {/* Right: Total Amount, Percentage & Expand Indicator */}
+                <div className="flex shrink-0 items-center gap-2">
+                  <div className="text-right">
                   {isVyshnavi ? (
                     <div>
                       <span className="text-sm font-black text-pink-600 block leading-tight tracking-wide">
@@ -156,8 +192,14 @@ export function MemberSpendingSummary() {
                       </div>
                     </div>
                   )}
+                  </div>
+                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-cream-100 text-bvc-secondary">
+                    {isExpanded
+                      ? <ChevronUp className="h-3.5 w-3.5" />
+                      : <ChevronDown className="h-3.5 w-3.5" />}
+                  </span>
                 </div>
-              </div>
+              </button>
 
               {/* Relative Progress Bar */}
               <div className="w-full h-1.5 bg-cream-200 rounded-full overflow-hidden">
@@ -178,6 +220,46 @@ export function MemberSpendingSummary() {
                   }}
                 />
               </div>
+
+              {isExpanded && (
+                <div
+                  id={detailsId}
+                  className="mt-3 rounded-2xl border border-cream-200 bg-cream-50/70 p-3"
+                >
+                  <div className="mb-2 flex items-center justify-between gap-2">
+                    <span className="text-[10px] font-bold uppercase tracking-wide text-bvc-secondary">
+                      Payments by {member.name}
+                    </span>
+                    <span className="text-xs font-black tabular-nums text-bvc-text">
+                      ₹ {memberExpenses.reduce((sum, expense) => sum + (Number(expense.amount) || 0), 0).toLocaleString('en-IN')}
+                    </span>
+                  </div>
+
+                  {memberExpenses.length > 0 ? (
+                    <div className="divide-y divide-cream-200">
+                      {memberExpenses.map((expense) => (
+                        <div key={expense.id} className="flex items-start justify-between gap-3 py-2 first:pt-1 last:pb-1">
+                          <div className="min-w-0">
+                            <p className="break-words text-xs font-semibold text-bvc-text">
+                              {expense.purpose || 'Untitled expense'}
+                            </p>
+                            <p className="mt-0.5 text-[10px] font-medium text-bvc-secondary">
+                              {expense.category} · {formatExpenseDate(expense.date)}
+                            </p>
+                          </div>
+                          <span className="shrink-0 text-xs font-extrabold tabular-nums text-bvc-text">
+                            ₹ {Number(expense.amount || 0).toLocaleString('en-IN')}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="py-2 text-[11px] font-medium text-bvc-secondary">
+                      No individual payments recorded for {member.name}.
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
           );
         })}

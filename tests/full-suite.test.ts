@@ -402,6 +402,11 @@ async function runTestSuite() {
   const memberSummaryCode = fs.readFileSync(path.join(process.cwd(), 'src', 'components', 'MemberSpendingSummary.tsx'), 'utf8');
   assert(memberSummaryCode.includes('₹ ∞'), 'Vyshnavi amount must display ₹ ∞ (infinity)');
   assert(memberSummaryCode.includes('Miss you Vyshh!'), 'Vyshnavi tribute tagline must be present');
+  assert(memberSummaryCode.includes('expandedMember'), 'Member contribution rows must expand and collapse');
+  assert(memberSummaryCode.includes('getMemberExpenses'), 'Expanded member details must filter expenses by payer');
+  assert(memberSummaryCode.includes('expense.purpose'), 'Member payment details must display the expense purpose');
+  assert(memberSummaryCode.includes('formatExpenseDate(expense.date)'), 'Member payment details must display the expense date');
+  assert(memberSummaryCode.includes('expense.amount'), 'Member payment details must display each paid amount');
 
   console.log('  ✔ Chetan passcode 0923 verification, organizer checks, sw.js & Vyshnavi ₹ ∞ verified.\n');
 
