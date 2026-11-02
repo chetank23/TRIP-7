@@ -281,7 +281,7 @@ async function runTestSuite() {
 
   const expectedTable: Record<string, { url: string; msg: string }> = {
     'Chetan K': {
-      url: 'https://res.cloudinary.com/dccnccjgr/image/upload/v1793307425/CHETHAN_o38wnn.png',
+      url: 'https://res.cloudinary.com/dccnccjgr/image/upload/v1793645620/20260304_155806_g3ug2j.jpg',
       msg: "Haha, that's you, Chetan! 😎",
     },
     'Rohith': {

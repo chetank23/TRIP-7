@@ -17,7 +17,7 @@ export const FRIEND_PROFILES: FriendProfile[] = [
   {
     name: 'Chetan K',
     aliases: ['chetan k', 'chetan', 'chethan k', 'chethan'],
-    photoUrl: 'https://res.cloudinary.com/dccnccjgr/image/upload/v1793307425/CHETHAN_o38wnn.png',
+    photoUrl: 'https://res.cloudinary.com/dccnccjgr/image/upload/v1793645620/20260304_155806_g3ug2j.jpg',
     message: "Haha, that's you, Chetan! 😎",
     initials: 'CK',
   },
