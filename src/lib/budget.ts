@@ -17,7 +17,8 @@ export function validateBudgetSources(input: unknown):
   const sources: BudgetSource[] = [];
   let totalCents = 0;
 
-  for (const [index, raw] of input.entries()) {
+  for (let index = 0; index < input.length; index += 1) {
+    const raw = input[index];
     if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return { error: `Budget source ${index + 1} is invalid.` };
     const item = raw as Record<string, unknown>;
     const id = typeof item.id === 'string' ? item.id.trim() : '';
