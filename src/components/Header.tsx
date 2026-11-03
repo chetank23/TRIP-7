@@ -27,7 +27,6 @@ export function Header({
   const pathname = usePathname();
   const { userName, refreshState, isSyncing, state, showToast } = useTrip();
 
-  const membersCount = state?.members?.length || 7;
   const isHistoryPage = pathname === '/history';
   const isChatPage = pathname === '/chat';
 
@@ -229,18 +228,14 @@ export function Header({
     }
   };
 
-  const displayTitle = title || 'BVC Trip';
-  const displaySubtitle =
-    subtitle !== undefined
-      ? subtitle
-      : title
-      ? undefined
-      : `${membersCount} friends · One budget · Many memories`;
+  // Keep the brand title short so it never competes with navigation controls.
+  const displayTitle = title || 'BVC';
+  const displaySubtitle = subtitle;
 
   return (
     <>
     <header className="sticky top-0 z-30 w-full app-header-safe-area bg-[#FEFBF6]/95 backdrop-blur-md border-b border-[#EFE3D7]/70 shadow-[0_2px_8px_rgba(0,0,0,0.03)] select-none">
-      <div className="mx-auto grid w-full max-w-7xl grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 px-3 py-2 sm:gap-4 sm:px-5 sm:py-3 lg:px-7">
+      <div className="mx-auto grid w-full max-w-7xl grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 px-3 sm:gap-4 sm:px-5 lg:px-7">
         {/* ================= LEFT SECTION ================= */}
         <div className="flex min-w-0 items-center justify-start">
           {showBack && (
@@ -312,7 +307,7 @@ export function Header({
               {/* History & Audit Trail Button */}
               <Link
                 href="/history"
-                className={`relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full border bg-white shadow-sm transition-all active:scale-95 ${
+                className={`relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full border bg-white shadow-sm transition-all active:scale-95 ${
                   isHistoryPage
                     ? 'border-[#D7192D] bg-[#FFF8F7] text-[#D7192D]'
                     : 'border-[#EFE3D7] text-[#81766C] hover:border-[#D7192D]/40 hover:bg-[#F6EDE2] hover:text-[#D7192D]'
@@ -342,7 +337,7 @@ export function Header({
           {/* Group Chat — available throughout the app */}
           <Link
             href="/chat"
-            className={`relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full border shadow-sm transition-all active:scale-95 ${
+            className={`relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full border shadow-sm transition-all active:scale-95 ${
               isChatPage
                 ? 'border-[#D7192D] bg-[#FFF0F2] text-[#D7192D]'
                 : 'border-[#EFE3D7] bg-white text-[#81766C] hover:border-[#D7192D]/40 hover:bg-[#FFF8F7] hover:text-[#D7192D]'
@@ -365,7 +360,7 @@ export function Header({
             /* User Avatar Initial */
             <Link
               href="/settings"
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-tr from-[#D7192D] to-[#FFC49B] text-xs font-black text-white shadow-sm ring-2 ring-white transition-all hover:opacity-90 active:scale-95"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-tr from-[#D7192D] to-[#FFC49B] text-xs font-black text-white shadow-sm ring-2 ring-white transition-all hover:opacity-90 active:scale-95"
               aria-label={`Logged in as ${userName || 'You'}. Open settings.`}
               title={`Logged in as ${userName || 'Member'} (Click for Settings)`}
             >

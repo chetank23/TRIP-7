@@ -731,6 +731,11 @@ async function runTestSuite() {
   assert(headerSource.includes('Syncing trip data…'), 'The BVC title must show a syncing status while shared state refreshes');
   assert(headerSource.includes('shadow-[0_0_0_3px_rgba(215,25,45,0.06),0_0_20px_rgba(215,25,45,0.2)]'), 'The BVC title must glow during syncing');
   assert(headerSource.includes('max-w-7xl grid-cols-[auto_minmax(0,1fr)_auto]'), 'The navbar must use a full-width responsive three-section layout');
+  assert(headerSource.includes("const displayTitle = title || 'BVC'"), 'The default navbar brand title must be BVC, without Trip');
+  assert(!headerSource.includes('Many memories'), 'The default long tagline must not be shown in the navbar');
+  assert(!headerSource.includes('py-2 sm:gap-4 sm:px-5 sm:py-3'), 'The navbar must not add extra vertical padding');
+  assert(headerSource.includes('relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full border bg-white'), 'The history control must keep the compact 36px size');
+  assert(headerSource.includes('relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full border shadow-sm'), 'The chat control must keep the compact 36px size');
   assert(headerSource.includes('chatUnreadCount'), 'The global chat icon must show an unread message count');
   assert(headerSource.includes("event: 'message-created'"), 'The global header must react to incoming chat broadcasts');
   assert(headerSource.includes("event: 'chat-cleared'"), 'The global header must clear unread alerts when chat is cleared');
