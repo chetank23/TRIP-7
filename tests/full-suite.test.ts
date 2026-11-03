@@ -728,6 +728,11 @@ async function runTestSuite() {
   assert(headerSource.includes('href="/chat"'), 'The global app header must expose the group chat icon');
   assert(!headerSource.includes('RefreshCw'), 'The global navbar must not display a separate reload icon');
   assert(headerSource.includes('onClick={handleRefresh}'), 'The BVC wordmark must trigger the existing manual refresh action');
+  assert(headerSource.includes("const displayTitle = 'BVC'"), 'Every page must retain the same BVC brand title');
+  assert(headerSource.includes('title.toUpperCase()'), 'Page-specific section names must use the shared brand subtitle position');
+  assert(headerSource.includes('href="/settings"'), 'The profile shortcut must remain visible on every top navbar');
+  assert(headerSource.includes('bg-[#FFF3E8]/90'), 'Every page must use the shared warm action capsule');
+  assert(headerSource.includes('max-w-[88px]'), 'Page-specific controls must fit into the compact navbar action slot');
   assert(headerSource.includes('SYNCING TRIP DATA…'), 'The BVC wordmark must show a syncing status while shared state refreshes');
   assert(headerSource.includes('bg-[#FFF3E8]/90'), 'History and chat controls must be grouped in the premium action capsule');
   assert(headerSource.includes('TRAVEL TOGETHER'), 'The default BVC brand must include the approved travel tagline');
@@ -737,6 +742,16 @@ async function runTestSuite() {
   assert(headerSource.includes("event: 'message-created'"), 'The global header must react to incoming chat broadcasts');
   assert(headerSource.includes("event: 'chat-cleared'"), 'The global header must clear unread alerts when chat is cleared');
   assert(headerSource.includes('Tap to open chat'), 'Incoming messages must show an in-app popup with a chat shortcut');
+  const bottomNavigationSource = fs.readFileSync(
+    path.join(process.cwd(), 'src/components/Navigation.tsx'),
+    'utf-8'
+  );
+  assert(bottomNavigationSource.includes('bg-[#FFF3E8]/95'), 'Bottom navigation must use the same warm cream capsule surface');
+  assert(bottomNavigationSource.includes('bg-white text-bvc-red font-semibold shadow-sm'), 'Bottom navigation must use a consistent active item surface');
+  assert(bottomNavigationSource.includes('aria-label="Bottom Navigation"'), 'Bottom navigation must preserve its accessible navigation label');
+  assert(bottomNavigationSource.includes('openAddExpense()'), 'Bottom navigation must preserve the central add expense action');
+  const globalCssSource = fs.readFileSync(path.join(process.cwd(), 'src/app/globals.css'), 'utf-8');
+  assert(globalCssSource.includes('background: rgba(255, 243, 232, 0.92)'), 'Shared glass navigation surfaces must match the approved premium cream palette');
   const chatNotificationsSource = fs.readFileSync(
     path.join(process.cwd(), 'src/lib/chat-notifications.ts'),
     'utf-8'

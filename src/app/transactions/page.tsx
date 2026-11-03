@@ -135,7 +135,7 @@ function TransactionsContent() {
           <button
             type="button"
             onClick={() => openAddExpense()}
-            className="w-9 h-9 rounded-full bg-bvc-red text-white flex items-center justify-center shadow-sm hover:bg-bvc-deepRed transition-colors"
+            className="flex h-8 w-8 items-center justify-center rounded-full bg-bvc-red text-white shadow-sm transition-colors hover:bg-bvc-deepRed"
             title="Add Expense"
           >
             <Plus className="w-5 h-5" />

@@ -228,40 +228,41 @@ export function Header({
     }
   };
 
-  // The BVC wordmark is also the manual refresh control.
-  const displayTitle = title || 'BVC';
-  const displaySubtitle = subtitle !== undefined ? subtitle : title ? undefined : 'TRAVEL TOGETHER';
+  // Keep the same BVC brand block on every route; page title becomes its small descriptor.
+  const displayTitle = 'BVC';
+  const displaySubtitle =
+    subtitle !== undefined ? subtitle : title ? title.toUpperCase() : 'TRAVEL TOGETHER';
 
   return (
     <>
     <header className="sticky top-0 z-30 w-full app-header-safe-area bg-[#FEFBF6]/95 backdrop-blur-md border-b border-[#EFE3D7]/70 shadow-[0_2px_8px_rgba(0,0,0,0.03)] select-none">
-      <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-2 px-3 sm:gap-4 sm:px-5 lg:px-7">
+      <div className="mx-auto flex w-full max-w-7xl min-w-0 items-center justify-between gap-2 px-2.5 sm:gap-4 sm:px-5 lg:px-7">
         {/* ================= BRAND SECTION ================= */}
-        <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+        <div className="flex min-w-0 items-center gap-1.5 sm:gap-3">
           {showBack && (
             <button
               type="button"
               onClick={() => router.back()}
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[#EFE3D7] bg-white text-[#242126] shadow-sm transition-all hover:border-[#D7192D]/40 hover:bg-[#F6EDE2] active:scale-95"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#EFE3D7] bg-white text-[#81766C] shadow-sm transition-all hover:border-[#D7192D]/40 hover:bg-[#F6EDE2] hover:text-[#D7192D] active:scale-95 sm:h-9 sm:w-9"
               aria-label="Go back"
               title="Go back"
             >
-              <ArrowLeft className="h-5 w-5 stroke-[2.4]" />
+              <ArrowLeft className="h-4 w-4 stroke-[2.4] sm:h-5 sm:w-5" />
             </button>
           )}
 
           <Link
             href="/"
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-[#FFC49B]/40 bg-[#FFC49B]/30 text-[#D7192D] shadow-xs transition-transform hover:scale-105 active:scale-95"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl border border-[#FFC49B]/40 bg-[#FFC49B]/30 text-[#D7192D] shadow-xs transition-transform hover:scale-105 active:scale-95 sm:h-10 sm:w-10"
             aria-label="BVC Trip Home"
             title="BVC Trip Home"
           >
-            <Palmtree className="h-6 w-6 stroke-[2.2]" />
+            <Palmtree className="h-5 w-5 stroke-[2.2] sm:h-6 sm:w-6" />
           </Link>
 
-          <span className="h-9 w-px shrink-0 bg-[#DCCABD]" aria-hidden="true" />
+          <span className="h-8 w-px shrink-0 bg-[#DCCABD] sm:h-9" aria-hidden="true" />
 
-          <div className="flex min-w-0 flex-col items-start justify-center">
+          <div className="flex min-w-0 max-w-[92px] flex-col items-start justify-center min-[400px]:max-w-[116px] sm:max-w-none">
             <button
               type="button"
               onClick={handleRefresh}
@@ -279,7 +280,7 @@ export function Header({
                 {displayTitle}
               </span>
               {displaySubtitle && (
-                <span className={`mt-1 max-w-full truncate text-[8px] font-extrabold uppercase leading-none tracking-[0.19em] sm:text-[9px] ${
+                <span className={`mt-1 max-w-full truncate text-[7px] font-extrabold uppercase leading-none tracking-[0.14em] min-[400px]:text-[8px] min-[400px]:tracking-[0.19em] sm:text-[9px] ${
                   isSyncing ? 'text-[#D7192D]' : 'text-[#8A796D]'
                 }`}>
                   {isSyncing ? 'SYNCING TRIP DATA…' : displaySubtitle}
@@ -298,10 +299,12 @@ export function Header({
         </div>
 
         {/* ================= QUICK ACTIONS ================= */}
-        <div className="flex shrink-0 items-center justify-end gap-2 sm:gap-3">
-          <div className="flex h-10 items-center gap-1 rounded-full border border-[#F0E1D5] bg-[#FFF3E8]/90 px-1.5 shadow-[0_2px_8px_rgba(120,88,64,0.06)]">
+        <div className="flex shrink-0 items-center justify-end gap-1.5 sm:gap-3">
+          <div className="flex h-10 min-w-0 items-center gap-0.5 rounded-full border border-[#F0E1D5] bg-[#FFF3E8]/90 px-1 shadow-[0_2px_8px_rgba(120,88,64,0.06)] sm:gap-1.5 sm:px-1.5">
             {rightAction ? (
-              <div className="flex items-center px-1">{rightAction}</div>
+              <div className="flex h-8 max-w-[88px] min-w-0 items-center justify-center overflow-hidden px-0.5 min-[400px]:max-w-[108px] sm:max-w-[180px]">
+                {rightAction}
+              </div>
             ) : (
               <Link
                 href="/history"
@@ -331,7 +334,7 @@ export function Header({
               </Link>
             )}
 
-            <span className="h-6 w-px bg-[#E2D1C3]" aria-hidden="true" />
+            <span className="h-6 w-px shrink-0 bg-[#E2D1C3]" aria-hidden="true" />
 
             <Link
               href="/chat"
@@ -355,16 +358,14 @@ export function Header({
             </Link>
           </div>
 
-          {!rightAction && (
-            <Link
-              href="/settings"
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-tr from-[#D7192D] to-[#F36A68] text-xs font-black text-white shadow-sm ring-2 ring-white transition-all hover:opacity-90 active:scale-95"
-              aria-label={`Logged in as ${userName || 'You'}. Open settings.`}
-              title={`Logged in as ${userName || 'Member'} (Click for Settings)`}
-            >
-              {userInitials}
-            </Link>
-          )}
+          <Link
+            href="/settings"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-tr from-[#D7192D] to-[#F36A68] text-xs font-black text-white shadow-sm ring-2 ring-white transition-all hover:opacity-90 active:scale-95"
+            aria-label={`Logged in as ${userName || 'You'}. Open settings.`}
+            title={`Logged in as ${userName || 'Member'} (Click for Settings)`}
+          >
+            {userInitials}
+          </Link>
         </div>
       </div>
     </header>

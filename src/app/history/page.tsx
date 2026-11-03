@@ -153,7 +153,7 @@ export default function HistoryPage() {
             <select
               value={filter}
               onChange={(e) => setFilter(e.target.value as FilterType)}
-              className="text-xs font-semibold bg-white border border-cream-300 rounded-full px-3 py-1.5 text-bvc-text focus:outline-none focus:ring-1 focus:ring-bvc-red appearance-none pr-6 shadow-sm"
+              className="h-8 w-[88px] rounded-full border border-cream-300 bg-white px-2 py-1 pr-5 text-[10px] font-semibold text-bvc-text shadow-sm focus:outline-none focus:ring-1 focus:ring-bvc-red appearance-none min-[400px]:w-[100px]"
             >
               <option value="all">All Activities</option>
               <option value="expenses">Expenses</option>

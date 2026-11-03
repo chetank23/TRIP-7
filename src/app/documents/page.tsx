@@ -169,7 +169,7 @@ export default function DocumentsPage() {
           <button
             type="button"
             onClick={() => setIsUploadOpen(true)}
-            className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-full bg-bvc-red text-white text-xs font-bold shadow-sm hover:bg-bvc-deepRed transition-colors"
+            className="inline-flex h-8 items-center gap-1 rounded-full bg-bvc-red px-2 py-1 text-[10px] font-bold whitespace-nowrap text-white shadow-sm transition-colors hover:bg-bvc-deepRed"
           >
             <Plus className="w-4 h-4" />
             <span>Upload</span>
