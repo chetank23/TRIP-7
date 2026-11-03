@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
-import { RefreshCw, History, ArrowLeft, Palmtree, MessageCircle, X } from 'lucide-react';
+import { History, ArrowLeft, Palmtree, MessageCircle, X } from 'lucide-react';
 import { useTrip } from '@/lib/trip-context';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { getChatNotificationStorageKeys, readChatUnreadIds, writeChatUnreadIds } from '@/lib/chat-notifications';
@@ -240,59 +240,71 @@ export function Header({
   return (
     <>
     <header className="sticky top-0 z-30 w-full app-header-safe-area bg-[#FEFBF6]/95 backdrop-blur-md border-b border-[#EFE3D7]/70 shadow-[0_2px_8px_rgba(0,0,0,0.03)] select-none">
-      <div className="w-full max-w-lg mx-auto grid grid-cols-[88px_minmax(0,1fr)_auto] items-center gap-1.5 sm:gap-2.5">
+      <div className="mx-auto grid w-full max-w-7xl grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 px-3 py-2 sm:gap-4 sm:px-5 sm:py-3 lg:px-7">
         {/* ================= LEFT SECTION ================= */}
-        <div className="flex items-center gap-2 shrink-0 justify-start">
-          {showBack ? (
+        <div className="flex min-w-0 items-center justify-start">
+          {showBack && (
             <button
               type="button"
               onClick={() => router.back()}
-              className="w-10 h-10 rounded-full bg-white border border-[#EFE3D7] flex items-center justify-center text-[#242126] hover:bg-[#F6EDE2] hover:border-[#D7192D]/40 active:scale-95 transition-all shadow-sm shrink-0"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#EFE3D7] bg-white text-[#242126] shadow-sm transition-all hover:border-[#D7192D]/40 hover:bg-[#F6EDE2] active:scale-95"
               aria-label="Go back"
               title="Go back"
             >
-              <ArrowLeft className="w-5 h-5 stroke-[2.4]" />
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={handleRefresh}
-              disabled={isSyncing}
-              className="w-10 h-10 rounded-full bg-white border border-[#EFE3D7] flex items-center justify-center text-[#81766C] hover:text-[#D7192D] hover:border-[#D7192D]/40 hover:bg-[#F6EDE2] active:scale-95 transition-all shadow-sm disabled:opacity-60 shrink-0"
-              aria-label="Refresh shared data"
-              title="Refresh shared data"
-            >
-              <RefreshCw
-                className={`w-4.5 h-4.5 stroke-[2.2] ${isSyncing ? 'animate-spin text-[#D7192D]' : ''}`}
-              />
+              <ArrowLeft className="h-5 w-5 stroke-[2.4]" />
             </button>
           )}
 
           {/* Palm-Tree App Logo Icon */}
           <Link
             href="/"
-            className="w-10 h-10 rounded-2xl bg-[#FFC49B]/30 border border-[#FFC49B]/40 flex items-center justify-center text-[#D7192D] shrink-0 hover:scale-105 active:scale-95 transition-transform shadow-xs"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-[#FFC49B]/40 bg-[#FFC49B]/30 text-[#D7192D] shadow-xs transition-transform hover:scale-105 active:scale-95"
             aria-label="BVC Trip Home"
             title="BVC Trip Home"
           >
-            <Palmtree className="w-5 h-5 stroke-[2.2]" />
+            <Palmtree className="h-5 w-5 stroke-[2.2]" />
           </Link>
         </div>
 
         {/* ================= CENTER SECTION ================= */}
-        <div className="flex flex-col items-center justify-center min-w-0 px-1 text-center overflow-hidden">
-          <h1 className="text-base sm:text-lg font-black text-[#242126] tracking-tight truncate w-full leading-tight">
-            {displayTitle}
+        <div className="flex min-w-0 items-center justify-center overflow-hidden px-1 text-center">
+          <h1 className="w-full min-w-0 truncate text-base font-black leading-tight tracking-tight text-[#242126] sm:text-xl">
+            <button
+              type="button"
+              onClick={handleRefresh}
+              disabled={isSyncing}
+              aria-label={isSyncing ? 'Synchronizing trip data' : 'Refresh shared trip data'}
+              aria-busy={isSyncing}
+              title={isSyncing ? 'Synchronizing shared trip data…' : 'Tap to refresh shared trip data'}
+              className={`relative inline-flex max-w-full flex-col items-center justify-center rounded-xl border px-2.5 py-1 transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#D7192D]/40 disabled:cursor-wait ${
+                isSyncing
+                  ? 'border-[#D7192D]/35 bg-[#FFF6F4] text-[#D7192D] shadow-[0_0_0_3px_rgba(215,25,45,0.06),0_0_20px_rgba(215,25,45,0.2)]'
+                  : 'border-transparent hover:border-[#EFE3D7] hover:bg-white/60 active:scale-[0.98]'
+              }`}
+            >
+              <span className={`relative z-[1] truncate ${isSyncing ? 'drop-shadow-[0_0_8px_rgba(215,25,45,0.2)]' : ''}`}>
+                {displayTitle}
+              </span>
+              {(isSyncing || displaySubtitle) && (
+                <span className={`relative z-[1] mt-0.5 hidden max-w-full items-center justify-center gap-1 truncate text-[10px] font-semibold leading-tight tracking-tight min-[340px]:inline-flex sm:text-xs ${
+                  isSyncing ? 'text-[#D7192D]' : 'text-[#81766C]'
+                }`}>
+                  {isSyncing ? (
+                    <>
+                      <span className="h-1.5 w-1.5 shrink-0 animate-pulse rounded-full bg-[#D7192D]" />
+                      <span className="truncate">Syncing trip data…</span>
+                    </>
+                  ) : (
+                    displaySubtitle
+                  )}
+                </span>
+              )}
+            </button>
           </h1>
-          {displaySubtitle && (
-            <p className="text-[11px] sm:text-xs text-[#81766C] font-semibold tracking-tight truncate w-full leading-tight mt-0.5 hidden min-[340px]:block">
-              {displaySubtitle}
-            </p>
-          )}
         </div>
 
         {/* ================= RIGHT SECTION ================= */}
-        <div className="flex items-center gap-1.5 shrink-0 justify-end">
+        <div className="flex items-center gap-1.5 shrink-0 justify-end sm:gap-2">
           {rightAction ? (
             <>{rightAction}</>
           ) : (
@@ -300,7 +312,7 @@ export function Header({
               {/* History & Audit Trail Button */}
               <Link
                 href="/history"
-                className={`relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full border bg-white shadow-sm transition-all active:scale-95 ${
+                className={`relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full border bg-white shadow-sm transition-all active:scale-95 ${
                   isHistoryPage
                     ? 'border-[#D7192D] bg-[#FFF8F7] text-[#D7192D]'
                     : 'border-[#EFE3D7] text-[#81766C] hover:border-[#D7192D]/40 hover:bg-[#F6EDE2] hover:text-[#D7192D]'
@@ -330,7 +342,7 @@ export function Header({
           {/* Group Chat — available throughout the app */}
           <Link
             href="/chat"
-            className={`relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full border shadow-sm transition-all active:scale-95 ${
+            className={`relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full border shadow-sm transition-all active:scale-95 ${
               isChatPage
                 ? 'border-[#D7192D] bg-[#FFF0F2] text-[#D7192D]'
                 : 'border-[#EFE3D7] bg-white text-[#81766C] hover:border-[#D7192D]/40 hover:bg-[#FFF8F7] hover:text-[#D7192D]'
@@ -353,7 +365,7 @@ export function Header({
             /* User Avatar Initial */
             <Link
               href="/settings"
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-tr from-[#D7192D] to-[#FFC49B] text-xs font-black text-white shadow-sm ring-2 ring-white transition-all hover:opacity-90 active:scale-95"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-tr from-[#D7192D] to-[#FFC49B] text-xs font-black text-white shadow-sm ring-2 ring-white transition-all hover:opacity-90 active:scale-95"
               aria-label={`Logged in as ${userName || 'You'}. Open settings.`}
               title={`Logged in as ${userName || 'Member'} (Click for Settings)`}
             >
@@ -375,7 +387,7 @@ export function Header({
               onClick={() => setChatAlert(null)}
               className="flex min-w-0 flex-1 items-start gap-3"
             >
-              <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#FFF0F2] text-[#D7192D]">
+              <span className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#FFF0F2] text-[#D7192D]">
                 <MessageCircle className="h-4.5 w-4.5" />
               </span>
               <span className="min-w-0 flex-1">
