@@ -228,21 +228,21 @@ export function Header({
     }
   };
 
-  // Keep the brand title short so it never competes with navigation controls.
+  // The BVC wordmark is also the manual refresh control.
   const displayTitle = title || 'BVC';
-  const displaySubtitle = subtitle;
+  const displaySubtitle = subtitle !== undefined ? subtitle : title ? undefined : 'TRAVEL TOGETHER';
 
   return (
     <>
     <header className="sticky top-0 z-30 w-full app-header-safe-area bg-[#FEFBF6]/95 backdrop-blur-md border-b border-[#EFE3D7]/70 shadow-[0_2px_8px_rgba(0,0,0,0.03)] select-none">
-      <div className="mx-auto grid w-full max-w-7xl grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 px-3 sm:gap-4 sm:px-5 lg:px-7">
-        {/* ================= LEFT SECTION ================= */}
-        <div className="flex min-w-0 items-center justify-start">
+      <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-2 px-3 sm:gap-4 sm:px-5 lg:px-7">
+        {/* ================= BRAND SECTION ================= */}
+        <div className="flex min-w-0 items-center gap-2 sm:gap-3">
           {showBack && (
             <button
               type="button"
               onClick={() => router.back()}
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#EFE3D7] bg-white text-[#242126] shadow-sm transition-all hover:border-[#D7192D]/40 hover:bg-[#F6EDE2] active:scale-95"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[#EFE3D7] bg-white text-[#242126] shadow-sm transition-all hover:border-[#D7192D]/40 hover:bg-[#F6EDE2] active:scale-95"
               aria-label="Go back"
               title="Go back"
             >
@@ -250,67 +250,65 @@ export function Header({
             </button>
           )}
 
-          {/* Palm-Tree App Logo Icon */}
           <Link
             href="/"
             className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-[#FFC49B]/40 bg-[#FFC49B]/30 text-[#D7192D] shadow-xs transition-transform hover:scale-105 active:scale-95"
             aria-label="BVC Trip Home"
             title="BVC Trip Home"
           >
-            <Palmtree className="h-5 w-5 stroke-[2.2]" />
+            <Palmtree className="h-6 w-6 stroke-[2.2]" />
           </Link>
-        </div>
 
-        {/* ================= CENTER SECTION ================= */}
-        <div className="flex min-w-0 items-center justify-center overflow-hidden px-1 text-center">
-          <h1 className="w-full min-w-0 truncate text-base font-black leading-tight tracking-tight text-[#242126] sm:text-xl">
+          <span className="h-9 w-px shrink-0 bg-[#DCCABD]" aria-hidden="true" />
+
+          <div className="flex min-w-0 flex-col items-start justify-center">
             <button
               type="button"
               onClick={handleRefresh}
               disabled={isSyncing}
               aria-label={isSyncing ? 'Synchronizing trip data' : 'Refresh shared trip data'}
               aria-busy={isSyncing}
-              title={isSyncing ? 'Synchronizing shared trip data…' : 'Tap to refresh shared trip data'}
-              className={`relative inline-flex max-w-full flex-col items-center justify-center rounded-xl border px-2.5 py-1 transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#D7192D]/40 disabled:cursor-wait ${
-                isSyncing
-                  ? 'border-[#D7192D]/35 bg-[#FFF6F4] text-[#D7192D] shadow-[0_0_0_3px_rgba(215,25,45,0.06),0_0_20px_rgba(215,25,45,0.2)]'
-                  : 'border-transparent hover:border-[#EFE3D7] hover:bg-white/60 active:scale-[0.98]'
+              title={isSyncing ? 'Synchronizing shared trip data…' : 'Tap BVC to refresh shared trip data'}
+              className={`group relative flex max-w-full flex-col items-start justify-center rounded-md text-left transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#D7192D]/40 disabled:cursor-wait ${
+                isSyncing ? 'text-[#D7192D]' : 'text-[#242126] hover:text-[#D7192D]'
               }`}
             >
-              <span className={`relative z-[1] truncate ${isSyncing ? 'drop-shadow-[0_0_8px_rgba(215,25,45,0.2)]' : ''}`}>
+              <span className={`max-w-full truncate text-[21px] font-black leading-[1.02] tracking-[-0.045em] sm:text-2xl ${
+                isSyncing ? 'drop-shadow-[0_0_9px_rgba(215,25,45,0.32)]' : ''
+              }`}>
                 {displayTitle}
               </span>
-              {(isSyncing || displaySubtitle) && (
-                <span className={`relative z-[1] mt-0.5 hidden max-w-full items-center justify-center gap-1 truncate text-[10px] font-semibold leading-tight tracking-tight min-[340px]:inline-flex sm:text-xs ${
-                  isSyncing ? 'text-[#D7192D]' : 'text-[#81766C]'
+              {displaySubtitle && (
+                <span className={`mt-1 max-w-full truncate text-[8px] font-extrabold uppercase leading-none tracking-[0.19em] sm:text-[9px] ${
+                  isSyncing ? 'text-[#D7192D]' : 'text-[#8A796D]'
                 }`}>
-                  {isSyncing ? (
-                    <>
-                      <span className="h-1.5 w-1.5 shrink-0 animate-pulse rounded-full bg-[#D7192D]" />
-                      <span className="truncate">Syncing trip data…</span>
-                    </>
-                  ) : (
-                    displaySubtitle
-                  )}
+                  {isSyncing ? 'SYNCING TRIP DATA…' : displaySubtitle}
                 </span>
               )}
+              <span
+                className={`mt-1.5 block h-[3px] w-8 rounded-full bg-[#D7192D] transition-all duration-300 ${
+                  isSyncing
+                    ? 'w-12 animate-pulse shadow-[0_0_10px_rgba(215,25,45,0.65)]'
+                    : 'group-hover:w-11'
+                }`}
+                aria-hidden="true"
+              />
             </button>
-          </h1>
+          </div>
         </div>
 
-        {/* ================= RIGHT SECTION ================= */}
-        <div className="flex items-center gap-1.5 shrink-0 justify-end sm:gap-2">
-          {rightAction ? (
-            <>{rightAction}</>
-          ) : (
-            <>
-              {/* History & Audit Trail Button */}
+        {/* ================= QUICK ACTIONS ================= */}
+        <div className="flex shrink-0 items-center justify-end gap-2 sm:gap-3">
+          <div className="flex h-10 items-center gap-1 rounded-full border border-[#F0E1D5] bg-[#FFF3E8]/90 px-1.5 shadow-[0_2px_8px_rgba(120,88,64,0.06)]">
+            {rightAction ? (
+              <div className="flex items-center px-1">{rightAction}</div>
+            ) : (
               <Link
                 href="/history"
-                className={`relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full border bg-white shadow-sm transition-all active:scale-95 ${
+                className={`relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-all active:scale-95 ${
                   isHistoryPage
-                    ? 'border-[#D7192D] bg-[#FFF8F7] text-[#D7192D]'
-                    : 'border-[#EFE3D7] text-[#81766C] hover:border-[#D7192D]/40 hover:bg-[#F6EDE2] hover:text-[#D7192D]'
+                    ? 'bg-white text-[#D7192D] shadow-sm'
+                    : 'text-[#81766C] hover:bg-white/80 hover:text-[#D7192D]'
                 }`}
                 aria-label={
                   hasUnread
@@ -326,41 +324,41 @@ export function Header({
                 <History className="h-5 w-5 stroke-[2.2]" />
                 {hasUnread && (
                   <span
-                    className="absolute right-1 top-1 h-2.5 w-2.5 animate-pulse rounded-full bg-[#D7192D] ring-2 ring-white"
+                    className="absolute right-0 top-0 h-2.5 w-2.5 animate-pulse rounded-full bg-[#D7192D] ring-2 ring-[#FFF3E8]"
                     aria-hidden="true"
                   />
                 )}
               </Link>
-            </>
-          )}
-
-          {/* Group Chat — available throughout the app */}
-          <Link
-            href="/chat"
-            className={`relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full border shadow-sm transition-all active:scale-95 ${
-              isChatPage
-                ? 'border-[#D7192D] bg-[#FFF0F2] text-[#D7192D]'
-                : 'border-[#EFE3D7] bg-white text-[#81766C] hover:border-[#D7192D]/40 hover:bg-[#FFF8F7] hover:text-[#D7192D]'
-            }`}
-            aria-label={chatUnreadCount > 0 ? `Open BVC group chat, ${chatUnreadCount} unread messages` : 'Open BVC group chat'}
-            title={chatUnreadCount > 0 ? `${chatUnreadCount} unread chat messages` : 'BVC group chat'}
-          >
-            <MessageCircle className="h-5 w-5 stroke-[2.2]" />
-            {chatUnreadCount > 0 && (
-              <span
-                className="absolute -right-1.5 -top-1.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full border-2 border-white bg-[#D7192D] px-1 text-[9px] font-black leading-none text-white shadow-sm"
-                aria-label={`${chatUnreadCount} unread messages`}
-              >
-                {chatUnreadCount > 9 ? '9+' : chatUnreadCount}
-              </span>
             )}
-          </Link>
+
+            <span className="h-6 w-px bg-[#E2D1C3]" aria-hidden="true" />
+
+            <Link
+              href="/chat"
+              className={`relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-all active:scale-95 ${
+                isChatPage
+                  ? 'bg-white text-[#D7192D] shadow-sm'
+                  : 'text-[#81766C] hover:bg-white/80 hover:text-[#D7192D]'
+              }`}
+              aria-label={chatUnreadCount > 0 ? `Open BVC group chat, ${chatUnreadCount} unread messages` : 'Open BVC group chat'}
+              title={chatUnreadCount > 0 ? `${chatUnreadCount} unread chat messages` : 'BVC group chat'}
+            >
+              <MessageCircle className="h-5 w-5 stroke-[2.2]" />
+              {chatUnreadCount > 0 && (
+                <span
+                  className="absolute -right-1 -top-1 flex h-[17px] min-w-[17px] items-center justify-center rounded-full border-2 border-[#FFF3E8] bg-[#D7192D] px-1 text-[9px] font-black leading-none text-white shadow-sm"
+                  aria-label={`${chatUnreadCount} unread messages`}
+                >
+                  {chatUnreadCount > 9 ? '9+' : chatUnreadCount}
+                </span>
+              )}
+            </Link>
+          </div>
 
           {!rightAction && (
-            /* User Avatar Initial */
             <Link
               href="/settings"
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-tr from-[#D7192D] to-[#FFC49B] text-xs font-black text-white shadow-sm ring-2 ring-white transition-all hover:opacity-90 active:scale-95"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-tr from-[#D7192D] to-[#F36A68] text-xs font-black text-white shadow-sm ring-2 ring-white transition-all hover:opacity-90 active:scale-95"
               aria-label={`Logged in as ${userName || 'You'}. Open settings.`}
               title={`Logged in as ${userName || 'Member'} (Click for Settings)`}
             >

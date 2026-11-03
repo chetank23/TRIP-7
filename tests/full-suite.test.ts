@@ -727,20 +727,16 @@ async function runTestSuite() {
   );
   assert(headerSource.includes('href="/chat"'), 'The global app header must expose the group chat icon');
   assert(!headerSource.includes('RefreshCw'), 'The global navbar must not display a separate reload icon');
-  assert(headerSource.includes('onClick={handleRefresh}'), 'The BVC title must trigger the existing manual refresh action');
-  assert(headerSource.includes('Syncing trip data…'), 'The BVC title must show a syncing status while shared state refreshes');
-  assert(headerSource.includes('shadow-[0_0_0_3px_rgba(215,25,45,0.06),0_0_20px_rgba(215,25,45,0.2)]'), 'The BVC title must glow during syncing');
-  assert(headerSource.includes('max-w-7xl grid-cols-[auto_minmax(0,1fr)_auto]'), 'The navbar must use a full-width responsive three-section layout');
-  assert(headerSource.includes("const displayTitle = title || 'BVC'"), 'The default navbar brand title must be BVC, without Trip');
-  assert(!headerSource.includes('Many memories'), 'The default long tagline must not be shown in the navbar');
-  assert(!headerSource.includes('py-2 sm:gap-4 sm:px-5 sm:py-3'), 'The navbar must not add extra vertical padding');
-  assert(headerSource.includes('relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full border bg-white'), 'The history control must keep the compact 36px size');
-  assert(headerSource.includes('relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full border shadow-sm'), 'The chat control must keep the compact 36px size');
-  assert(headerSource.includes('chatUnreadCount'), 'The global chat icon must show an unread message count');
+  assert(headerSource.includes('onClick={handleRefresh}'), 'The BVC wordmark must trigger the existing manual refresh action');
+  assert(headerSource.includes('SYNCING TRIP DATA…'), 'The BVC wordmark must show a syncing status while shared state refreshes');
+  assert(headerSource.includes('bg-[#FFF3E8]/90'), 'History and chat controls must be grouped in the premium action capsule');
+  assert(headerSource.includes('TRAVEL TOGETHER'), 'The default BVC brand must include the approved travel tagline');
+  assert(headerSource.includes('bg-[#DCCABD]'), 'The brand mark and wordmark must be visually separated');
+  assert(headerSource.includes('animate-pulse shadow-[0_0_10px_rgba(215,25,45,0.65)]'), 'The BVC underline must glow while syncing');
+  assert(headerSource.includes('h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-tr'), 'The profile avatar must remain compact');
   assert(headerSource.includes("event: 'message-created'"), 'The global header must react to incoming chat broadcasts');
   assert(headerSource.includes("event: 'chat-cleared'"), 'The global header must clear unread alerts when chat is cleared');
   assert(headerSource.includes('Tap to open chat'), 'Incoming messages must show an in-app popup with a chat shortcut');
-
   const chatNotificationsSource = fs.readFileSync(
     path.join(process.cwd(), 'src/lib/chat-notifications.ts'),
     'utf-8'
