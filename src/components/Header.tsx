@@ -251,14 +251,16 @@ export function Header({
             </button>
           )}
 
-          <Link
-            href="/"
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl border border-[#FFC49B]/40 bg-[#FFC49B]/30 text-[#D7192D] shadow-xs transition-transform hover:scale-105 active:scale-95 sm:h-10 sm:w-10"
-            aria-label="BVC Trip Home"
-            title="BVC Trip Home"
-          >
-            <Palmtree className="h-5 w-5 stroke-[2.2] sm:h-6 sm:w-6" />
-          </Link>
+          {pathname === '/' && (
+            <Link
+              href="/"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl border border-[#FFC49B]/40 bg-[#FFC49B]/30 text-[#D7192D] shadow-xs transition-transform hover:scale-105 active:scale-95 sm:h-10 sm:w-10"
+              aria-label="BVC Trip Home"
+              title="BVC Trip Home"
+            >
+              <Palmtree className="h-5 w-5 stroke-[2.2] sm:h-6 sm:w-6" />
+            </Link>
+          )}
 
           <span className="h-8 w-px shrink-0 bg-[#DCCABD] sm:h-9" aria-hidden="true" />
 

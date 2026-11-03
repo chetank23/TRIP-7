@@ -726,6 +726,7 @@ async function runTestSuite() {
     'utf-8'
   );
   assert(headerSource.includes('href="/chat"'), 'The global app header must expose the group chat icon');
+  assert(headerSource.includes("{pathname === '/' && ("), 'The palm-tree logo must only render on the main home page');
   assert(!headerSource.includes('RefreshCw'), 'The global navbar must not display a separate reload icon');
   assert(headerSource.includes('onClick={handleRefresh}'), 'The BVC wordmark must trigger the existing manual refresh action');
   assert(headerSource.includes("const displayTitle = 'BVC'"), 'Every page must retain the same BVC brand title');
