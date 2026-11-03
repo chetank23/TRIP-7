@@ -19,6 +19,7 @@ import {
 } from '@/lib/supabase/store';
 import { getSupabaseEnvConfig } from '@/lib/supabase/config';
 import { Expense, TripBudget, ActivityEvent, DocumentCategory, StorageStatus } from '@/types';
+import { validateBudgetSources } from '@/lib/budget';
 
 export const dynamic = 'force-dynamic';
 
@@ -120,6 +121,20 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { action, payload, expectedVersion, actor = 'Member' } = body;
 
+    let validatedBudget: ReturnType<typeof validateBudgetSources> | null = null;
+    if (action === 'UPDATE_BUDGET') {
+      const budgetPayload = (payload && typeof payload === 'object' ? payload : {}) as { sources?: unknown; total?: unknown };
+      const rawSources = Array.isArray(budgetPayload.sources)
+        ? budgetPayload.sources
+        : Number.isFinite(Number(budgetPayload.total)) && Number(budgetPayload.total) > 0
+          ? [{ id: 'legacy_trip_budget', name: 'Trip Budget', unitAmount: Number(budgetPayload.total), quantity: 1 }]
+          : [];
+      validatedBudget = validateBudgetSources(rawSources);
+      if ('error' in validatedBudget) {
+        return NextResponse.json({ success: false, error: validatedBudget.error }, { status: 400, headers: NO_CACHE_HEADERS });
+      }
+    }
+
     if (!action) {
       return NextResponse.json({ success: false, error: 'Action type is required' }, { status: 400 });
     }
@@ -145,12 +160,10 @@ export async function POST(req: NextRequest) {
       try {
         switch (action) {
           case 'UPDATE_BUDGET': {
-            const { total } = payload as { total: number };
-            const numTotal = Number(total);
-            if (isNaN(numTotal) || numTotal < 0) {
-              return NextResponse.json({ success: false, error: 'Valid budget amount is required' }, { status: 400 });
+            if (!validatedBudget || 'error' in validatedBudget) {
+              return NextResponse.json({ success: false, error: 'Valid budget sources are required' }, { status: 400, headers: NO_CACHE_HEADERS });
             }
-            const updated = await updateBudgetInSupabase(numTotal, actor);
+            const updated = await updateBudgetInSupabase(validatedBudget.sources, actor);
             return NextResponse.json({ success: true, data: updated, version: updated.version }, { headers: NO_CACHE_HEADERS });
           }
 
@@ -319,17 +332,14 @@ export async function POST(req: NextRequest) {
 
       switch (action) {
         case 'UPDATE_BUDGET': {
-          const { total } = payload as { total: number };
-          const numTotal = Number(total);
-          if (isNaN(numTotal) || numTotal < 0) {
-            throw new Error('Valid budget amount is required');
-          }
-
+          if (!validatedBudget || 'error' in validatedBudget) throw new Error('Valid budget sources are required');
+          const { sources, total: numTotal } = validatedBudget;
           const wasConfigured = current.budget.isConfigured;
           const oldBudget = current.budget.total;
 
           const newBudget: TripBudget = {
             total: numTotal,
+            sources,
             isConfigured: true,
             currency: 'INR',
             lastUpdatedBy: actor,
@@ -581,6 +591,7 @@ export async function POST(req: NextRequest) {
           if (resetBudget) {
             updated.budget = {
               total: 0,
+              sources: [],
               isConfigured: false,
               currency: 'INR',
               lastUpdatedBy: actor,

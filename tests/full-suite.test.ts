@@ -428,6 +428,30 @@ async function runTestSuite() {
   assert(migrationSql.includes('CREATE TABLE IF NOT EXISTS documents'), 'Schema must define documents table');
   assert(migrationSql.includes('CREATE TABLE IF NOT EXISTS document_contents'), 'Schema must define document_contents table for BYTEA PDFs');
   assert(migrationSql.includes('ENABLE ROW LEVEL SECURITY'), 'Schema must enable Row Level Security (RLS)');
+  assert(migrationSql.includes('DO $'), 'RLS policy guards must use valid PostgreSQL dollar-quoted DO blocks');
+  assert(!/^DO \\$(?!\\$)/m.test(migrationSql), 'Malformed single-dollar DO block delimiters must not remain');
+  const budgetMigrationPath = path.join(process.cwd(), 'supabase', 'migrations', '20261103000000_budget_source_breakdown.sql');
+  assert(fs.existsSync(budgetMigrationPath), 'Budget source breakdown migration must exist');
+  const budgetMigrationSql = fs.readFileSync(budgetMigrationPath, 'utf8');
+  assert(budgetMigrationSql.includes('ADD COLUMN IF NOT EXISTS budget_sources JSONB'), 'Supabase must persist budget source rows as JSONB');
+  assert(budgetMigrationSql.includes('sync_trip_budget_total_from_sources'), 'Database trigger must synchronize total budget from source rows');
+  assert(budgetMigrationSql.includes('BEFORE UPDATE OF budget_sources'), 'Budget total synchronization must run when source rows change');
+  const { validateBudgetSources, calculateBudgetTotal } = await import('../src/lib/budget');
+  const sampleSources = [
+    { id: 'personal', name: 'Personal Contribution', unitAmount: 5000, quantity: 7 },
+    { id: 'dept', name: 'Dept Fund', unitAmount: 10000, quantity: 2 },
+    { id: 'sponsor', name: 'Sponsorship', unitAmount: 3000, quantity: 2 },
+  ];
+  const checkedBudget = validateBudgetSources(sampleSources);
+  assert(!('error' in checkedBudget), 'Valid budget source rows must pass validation');
+  assert.strictEqual(checkedBudget.total, 61000, 'Budget source example must sum to ₹61,000');
+  assert.strictEqual(calculateBudgetTotal(sampleSources), 61000, 'Budget total helper must calculate amount × quantity for every source');
+  assert('error' in validateBudgetSources([{ id: 'bad', name: '', unitAmount: 100, quantity: 1 }]), 'Empty source names must be rejected');
+  assert('error' in validateBudgetSources([{ id: 'bad', name: 'Bad Qty', unitAmount: 100, quantity: 1.5 }]), 'Fractional quantities must be rejected');
+  const budgetModalSource = fs.readFileSync(path.join(process.cwd(), 'src', 'components', 'BudgetModal.tsx'), 'utf8');
+  assert(budgetModalSource.includes('Budget Breakdown (Sources)'), 'Budget editor must show its source breakdown');
+  assert(budgetModalSource.includes('Add Source'), 'Budget editor must support adding sources');
+  assert(budgetModalSource.includes('Update Shared Budget'), 'Budget editor must expose shared budget save action');
   assert(migrationSql.includes('FROM pg_policies'), 'Policy creation must check existing PostgreSQL policies before creating them');
   assert(migrationSql.includes('policyname = policy_definition.policy_name'), 'Policy existence checks must match the exact policy name');
   assert(migrationSql.includes("('trip_config', 'Allow public read on trip_config', 'FOR SELECT USING (true)')"), 'The trip_config read policy must retain its original rule');

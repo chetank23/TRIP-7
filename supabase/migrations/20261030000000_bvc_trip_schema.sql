@@ -118,7 +118,7 @@ ALTER TABLE documents ENABLE ROW LEVEL SECURITY;
 
 -- Allow read access to all trip tables for trip participants.
 -- Keep the original policy rules while skipping any policy that already exists.
-DO $
+DO $$
 DECLARE
   policy_definition RECORD;
 BEGIN
@@ -151,7 +151,7 @@ BEGIN
     END IF;
   END LOOP;
 END;
-$;
+$$;
 
 -- 7. Helper RPC function to atomically increment version
 CREATE OR REPLACE FUNCTION bump_trip_version()
@@ -184,7 +184,7 @@ CREATE TABLE IF NOT EXISTS document_contents (
 ALTER TABLE document_contents ENABLE ROW LEVEL SECURITY;
 
 -- Apply document_contents policies only when they are not already present.
-DO $
+DO $$
 DECLARE
   policy_definition RECORD;
 BEGIN
@@ -211,7 +211,7 @@ BEGIN
     END IF;
   END LOOP;
 END;
-$;
+$$;
 
 -- 9. Atomic Expense Creation with Coordinated Audit Entry
 CREATE OR REPLACE FUNCTION create_expense_with_audit(

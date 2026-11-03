@@ -7,7 +7,8 @@
 import { PoolClient } from 'pg';
 import { getSupabaseServerClient, hasSupabaseServerConfig } from './server';
 import { getPostgresPool } from './db';
-import { TripState, Expense, TripDocument, ActivityEvent, ExpenseCategory, DocumentCategory } from '@/types';
+import { TripState, Expense, TripDocument, ActivityEvent, ExpenseCategory, DocumentCategory, BudgetSource } from '@/types';
+import { calculateBudgetTotal } from '@/lib/budget';
 import { DEFAULT_MEMBERS, INITIAL_STATE, getLocalBlobFile } from '@/lib/storage';
 
 export class DatabaseOperationError extends Error {
@@ -199,6 +200,7 @@ export async function readStateFromSupabase(): Promise<TripState> {
     version,
     budget: {
       total: budgetTotal,
+      sources: Array.isArray(configData?.budget_sources) ? configData.budget_sources as BudgetSource[] : [],
       isConfigured: configData?.budget_is_configured ?? true,
       currency: configData?.budget_currency || 'INR',
       lastUpdatedBy: configData?.budget_last_updated_by || 'Chetan K',
@@ -622,39 +624,45 @@ export async function deleteExpenseInSupabase(
  * Updates shared budget in Supabase PostgreSQL.
  */
 export async function updateBudgetInSupabase(
-  newTotal: number,
+  sources: BudgetSource[],
   actor: string
 ): Promise<TripState> {
   const supabase = getSupabaseServerClient();
   const now = new Date().toISOString();
+  const newTotal = calculateBudgetTotal(sources);
 
-  const { data: current } = await supabase
+  const { data: current, error: currentError } = await supabase
     .from('trip_config')
     .select('*')
     .eq('id', 'default')
     .single();
 
-  const wasConfigured = current?.budget_is_configured ?? false;
-  const oldTotal = current?.budget_total != null ? Number(current.budget_total) : 0;
+  if (currentError || !current) {
+    throw new DatabaseOperationError(`Failed to load current trip budget: ${currentError?.message || 'trip_config row not found'}`);
+  }
+
+  const wasConfigured = current.budget_is_configured ?? false;
+  const oldTotal = current.budget_total != null ? Number(current.budget_total) : 0;
 
   const { error } = await supabase
     .from('trip_config')
     .update({
       budget_total: newTotal,
+      budget_sources: sources,
       budget_is_configured: true,
       budget_last_updated_by: actor,
       budget_last_updated_at: now,
-      version: (current?.version || 1) + 1,
+      version: (current.version || 1) + 1,
       updated_at: now,
     })
     .eq('id', 'default');
 
   if (error) {
-    throw new DatabaseOperationError(`Failed to update budget in Supabase: ${error.message}`);
+    throw new DatabaseOperationError(`Failed to update budget sources in Supabase PostgreSQL: ${error.message}. Confirm migration 20261103000000_budget_source_breakdown.sql has been applied.`);
   }
 
   const actId = `act_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
-  await supabase.from('activities').insert({
+  const { error: activityError } = await supabase.from('activities').insert({
     id: actId,
     action: wasConfigured ? 'budget_updated' : 'budget_configured',
     actor,
@@ -665,12 +673,12 @@ export async function updateBudgetInSupabase(
       oldValue: wasConfigured ? `₹${oldTotal.toLocaleString('en-IN')}` : 'Not set',
       newValue: `₹${newTotal.toLocaleString('en-IN')}`,
       description: wasConfigured
-        ? `Changed budget to ₹${newTotal.toLocaleString('en-IN')}`
-        : `Configured initial budget to ₹${newTotal.toLocaleString('en-IN')}`,
+        ? `Updated budget funding sources; total ₹${newTotal.toLocaleString('en-IN')}`
+        : `Configured initial budget from funding sources; total ₹${newTotal.toLocaleString('en-IN')}`,
     },
     created_at: now,
   });
-
+  if (activityError) console.error('Budget saved but its activity audit entry failed:', activityError.message);
   return readStateFromSupabase();
 }
 
@@ -1061,6 +1069,7 @@ export async function clearAllDataInSupabase(
   if (options.resetBudget) {
     await supabase.from('trip_config').update({
       budget_total: 0,
+      budget_sources: [],
       budget_is_configured: false,
       budget_last_updated_by: actor,
       budget_last_updated_at: now,

@@ -38,6 +38,7 @@ export const INITIAL_STATE: TripState = {
   version: 1,
   budget: {
     total: 20000,
+    sources: [],
     isConfigured: true,
     currency: 'INR',
     lastUpdatedBy: 'Chetan K',
@@ -269,6 +270,7 @@ function sanitizeState(raw: unknown): TripState {
     version: typeof obj.version === 'number' ? obj.version : 1,
     budget: {
       total: typeof obj.budget?.total === 'number' ? obj.budget.total : INITIAL_STATE.budget.total,
+      sources: Array.isArray(obj.budget?.sources) ? obj.budget.sources : [],
       isConfigured: typeof obj.budget?.isConfigured === 'boolean' ? obj.budget.isConfigured : true,
       currency: obj.budget?.currency || 'INR',
       lastUpdatedBy: migrateMemberName(obj.budget?.lastUpdatedBy),

@@ -10,6 +10,7 @@ import {
   DocumentCategory,
   ExpenseCategory,
   MemberContribution,
+  BudgetSource,
 } from '@/types';
 import { isOrganizer, setOrganizerVerified } from '@/lib/auth';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
@@ -69,7 +70,7 @@ interface TripContextType {
     notes?: string;
   }) => Promise<boolean>;
 
-  updateBudget: (total: number) => Promise<boolean>;
+  updateBudget: (sources: BudgetSource[]) => Promise<boolean>;
   uploadDocument: (file: File, title: string, category: DocumentCategory) => Promise<boolean>;
   updateDocumentMetadata: (id: string, title: string, category: DocumentCategory) => Promise<boolean>;
   deleteDocument: (id: string) => Promise<boolean>;
@@ -524,21 +525,19 @@ export function TripProvider({ children }: { children: React.ReactNode }) {
   }, [state, deleteExpenseTarget, userName, closeDeleteConfirm, showToast]);
 
   const updateBudget = useCallback(
-    async (total: number): Promise<boolean> => {
+    async (sources: BudgetSource[]): Promise<boolean> => {
       if (!state) return false;
-
       try {
         const res = await fetch('/api/state', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             action: 'UPDATE_BUDGET',
-            payload: { total },
+            payload: { sources },
             expectedVersion: state.version,
             actor: userName || 'Member',
           }),
         });
-
         const json = await res.json();
         if (res.status === 409) {
           showToast('Data was updated by another member. Please retry.', 'error');
@@ -548,15 +547,12 @@ export function TripProvider({ children }: { children: React.ReactNode }) {
           }
           return false;
         }
-
-        if (!res.ok || !json.success) {
-          throw new Error(json.error || 'Failed to update budget');
-        }
-
+        if (!res.ok || !json.success) throw new Error(json.error || 'Failed to update budget');
         lastVersionRef.current = json.data.version;
         setState(json.data);
         closeBudgetModal();
-        showToast(`Trip budget set to ₹${total.toLocaleString('en-IN')}`, 'success');
+        const savedTotal = Number(json.data?.budget?.total ?? 0);
+        showToast(`Shared trip budget updated to ₹${savedTotal.toLocaleString('en-IN')}`, 'success');
         return true;
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : 'Error updating budget';

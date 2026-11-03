@@ -67,12 +67,19 @@ export interface ActivityEvent {
   };
 }
 
+export interface BudgetSource {
+  id: string;
+  name: string;
+  unitAmount: number;
+  quantity: number;
+}
+
 export interface TripBudget {
   total: number; // Configured total budget, 0 or positive
+  sources?: BudgetSource[];
   isConfigured: boolean;
   currency: string; // Default 'INR' / '₹'
   lastUpdatedBy?: string;
-  lastUpdatedAt?: string;
 }
 
 export interface TripState {
