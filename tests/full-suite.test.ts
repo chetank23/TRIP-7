@@ -429,7 +429,7 @@ async function runTestSuite() {
   assert(migrationSql.includes('CREATE TABLE IF NOT EXISTS document_contents'), 'Schema must define document_contents table for BYTEA PDFs');
   assert(migrationSql.includes('ENABLE ROW LEVEL SECURITY'), 'Schema must enable Row Level Security (RLS)');
   assert(migrationSql.includes('DO $'), 'RLS policy guards must use valid PostgreSQL dollar-quoted DO blocks');
-  assert(!/^DO \\$(?!\\$)/m.test(migrationSql), 'Malformed single-dollar DO block delimiters must not remain');
+  assert(!migrationSql.split('\n').some((line) => line.trim() === 'DO $'), 'Malformed single-dollar DO block delimiters must not remain');
   const budgetMigrationPath = path.join(process.cwd(), 'supabase', 'migrations', '20261103000000_budget_source_breakdown.sql');
   assert(fs.existsSync(budgetMigrationPath), 'Budget source breakdown migration must exist');
   const budgetMigrationSql = fs.readFileSync(budgetMigrationPath, 'utf8');

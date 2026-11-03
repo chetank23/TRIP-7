@@ -80,6 +80,7 @@ export interface TripBudget {
   isConfigured: boolean;
   currency: string; // Default 'INR' / '₹'
   lastUpdatedBy?: string;
+  lastUpdatedAt?: string;
 }
 
 export interface TripState {
