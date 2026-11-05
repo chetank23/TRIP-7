@@ -295,7 +295,10 @@ export async function addExpenseInSupabase(
 
       await client.query(
         `UPDATE trip_config
-         SET members = ARRAY(SELECT DISTINCT unnest(array_append(members, $1))),
+         SET members = CASE
+               WHEN $1 = 'Shared (Group)' THEN members
+               ELSE ARRAY(SELECT DISTINCT unnest(array_append(members, $1)))
+             END,
              version = version + 1,
              updated_at = $2
          WHERE id = 'default'`,

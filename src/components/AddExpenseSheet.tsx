@@ -295,6 +295,7 @@ export function AddExpenseSheet() {
                     {member} {member === userName ? '(You)' : ''}
                   </option>
                 ))}
+                <option value="Shared (Group)">Shared (Group)</option>
               </select>
               <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-bvc-muted">
                 ▼

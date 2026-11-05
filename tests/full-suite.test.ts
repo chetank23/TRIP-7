@@ -762,6 +762,30 @@ async function runTestSuite() {
   assert(chatPageSource.includes('markChatMessagesRead(userName, incoming)'), 'Chat page must mark fetched messages as read');
   assert(chatApiSource.includes("searchParams.get('after')"), 'Chat API must support the device-local unread cursor without a schema change');
 
+  const addExpenseSheetSource = fs.readFileSync(
+    path.join(process.cwd(), 'src/components/AddExpenseSheet.tsx'),
+    'utf-8'
+  );
+  assert(addExpenseSheetSource.includes('<option value="Shared (Group)">Shared (Group)</option>'), 'Paid by selector must offer Shared (Group)');
+  const memberSpendingSummarySource = fs.readFileSync(
+    path.join(process.cwd(), 'src/components/MemberSpendingSummary.tsx'),
+    'utf-8'
+  );
+  assert(memberSpendingSummarySource.includes("const sharedGroupPayer = 'Shared (Group)'"), 'Group payments must have a distinct payer identity');
+  assert(memberSpendingSummarySource.includes('groupExpenses.map'), 'Group-paid expense details must be expandable in Who Paid How Much');
+  assert(memberSpendingSummarySource.includes('groupTotalPaid.toLocaleString'), 'Group-paid totals must be shown separately from individual members');
+  const stateRouteSource = fs.readFileSync(
+    path.join(process.cwd(), 'src/app/api/state/route.ts'),
+    'utf-8'
+  );
+  assert(stateRouteSource.includes("newExpense.paidBy !== 'Shared (Group)'"), 'Fallback expense creation must not add Shared (Group) to trip members');
+  const supabaseStoreSource = fs.readFileSync(
+    path.join(process.cwd(), 'src/lib/supabase/store.ts'),
+    'utf-8'
+  );
+  assert(supabaseStoreSource.includes("WHEN $1 = 'Shared (Group)' THEN members"), 'PostgreSQL expense creation must not add Shared (Group) to trip members');
+  console.log('  ✔ Shared Group payer option, separate contribution summary and member-roster protection verified.\\n');
+
   console.log('  ✔ Group chat persistence, realtime, unread badge, popup and device-local read tracking verified.\\n');
 
   console.log('🎉 ALL TESTS PASSED! NAVBAR CONTRACT, AUTO-SYNC, ORGANIZER PRIVILEGES, 6-MEMBER SPLIT, MEMBER SPENDING, PWA APP INSTALLATION, CHETAN PASSCODE, VYSHNAVI INFINITY, SUPABASE INTEGRATION, BLOB INDEPENDENCE, AVAILABLE BALANCE & GROUP CHAT VERIFIED!\n');

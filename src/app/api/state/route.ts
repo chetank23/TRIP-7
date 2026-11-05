@@ -409,7 +409,10 @@ export async function POST(req: NextRequest) {
             },
           };
 
-          if (!updated.members.includes(newExpense.paidBy)) {
+          if (
+            newExpense.paidBy !== 'Shared (Group)' &&
+            !updated.members.includes(newExpense.paidBy)
+          ) {
             updated.members = [...updated.members, newExpense.paidBy];
           }
 

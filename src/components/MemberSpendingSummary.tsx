@@ -18,6 +18,14 @@ function formatExpenseDate(value: string): string {
 export function MemberSpendingSummary() {
   const { memberSpending, totalSpent, state } = useTrip();
   const [expandedMember, setExpandedMember] = useState<string | null>(null);
+  const sharedGroupPayer = 'Shared (Group)';
+  const groupExpenses = (state?.expenses || [])
+    .filter((expense) => (expense.paidBy || '').trim().toLocaleLowerCase('en-IN') === sharedGroupPayer.toLocaleLowerCase('en-IN'))
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  const groupTotalPaid = groupExpenses.reduce((sum, expense) => sum + (Number(expense.amount) || 0), 0);
+  const groupPercentage = totalSpent > 0 ? Math.round((groupTotalPaid / totalSpent) * 100) : 0;
+  const isGroupExpanded = expandedMember === sharedGroupPayer;
+  const groupDetailsId = 'shared-group-expenses';
 
   const getMemberExpenses = (memberName: string) => {
     const normalizedName = memberName.trim().toLocaleLowerCase('en-IN');
@@ -59,7 +67,7 @@ export function MemberSpendingSummary() {
               Who Paid How Much
             </h3>
             <p className="text-[11px] font-medium text-bvc-secondary mt-0.5">
-              Individual contributions across the trip
+              Individual and group contributions across the trip
             </p>
           </div>
         </div>
@@ -263,6 +271,74 @@ export function MemberSpendingSummary() {
             </div>
           );
         })}
+
+        {groupExpenses.length > 0 && (
+          <div className="border-t border-cream-200 py-3">
+            <button
+              type="button"
+              onClick={() => setExpandedMember((current) => current === sharedGroupPayer ? null : sharedGroupPayer)}
+              aria-expanded={isGroupExpanded}
+              aria-controls={groupDetailsId}
+              aria-label="Show expenses paid by Shared (Group)"
+              className="flex w-full items-center justify-between gap-2 rounded-xl text-left outline-none transition-colors focus-visible:ring-2 focus-visible:ring-bvc-red/40"
+            >
+              <div className="flex min-w-0 items-center gap-3">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[#FDE5DC] bg-[#FFF9F6] text-bvc-red">
+                  <Users className="h-4 w-4 stroke-[2.2]" />
+                </div>
+                <div className="min-w-0">
+                  <span className="block truncate text-xs font-bold text-bvc-text">Shared (Group)</span>
+                  <span className="block text-[10px] font-medium text-bvc-secondary">
+                    {groupExpenses.length} group payment{groupExpenses.length === 1 ? '' : 's'}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex shrink-0 items-center gap-2">
+                <div className="text-right">
+                  <span className="block text-xs font-extrabold tabular-nums text-bvc-text">
+                    ₹ {groupTotalPaid.toLocaleString('en-IN')}
+                  </span>
+                  <span className="text-[10px] font-semibold tabular-nums text-bvc-secondary">{groupPercentage}%</span>
+                </div>
+                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-cream-100 text-bvc-secondary">
+                  {isGroupExpanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+                </span>
+              </div>
+            </button>
+
+            <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-cream-200">
+              <div
+                className="h-full rounded-full bg-bvc-red/70 transition-all duration-500"
+                style={{ width: `${Math.max(groupPercentage, groupTotalPaid > 0 ? 5 : 0)}%` }}
+              />
+            </div>
+
+            {isGroupExpanded && (
+              <div id={groupDetailsId} className="mt-3 rounded-2xl border border-cream-200 bg-cream-50/70 p-3">
+                <div className="mb-2 flex items-center justify-between gap-2">
+                  <span className="text-[10px] font-bold uppercase tracking-wide text-bvc-secondary">Group-paid expenses</span>
+                  <span className="text-xs font-black tabular-nums text-bvc-text">₹ {groupTotalPaid.toLocaleString('en-IN')}</span>
+                </div>
+                <div className="divide-y divide-cream-200">
+                  {groupExpenses.map((expense) => (
+                    <div key={expense.id} className="flex items-start justify-between gap-3 py-2 first:pt-1 last:pb-1">
+                      <div className="min-w-0">
+                        <p className="break-words text-xs font-semibold text-bvc-text">{expense.purpose || 'Untitled expense'}</p>
+                        <p className="mt-0.5 text-[10px] font-medium text-bvc-secondary">
+                          {expense.category} · {formatExpenseDate(expense.date)}
+                        </p>
+                      </div>
+                      <span className="shrink-0 text-xs font-extrabold tabular-nums text-bvc-text">
+                        ₹ {Number(expense.amount || 0).toLocaleString('en-IN')}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
